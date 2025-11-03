@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 from sqlalchemy import Integer, String, Text, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.db import Base
 
 class HistoricoAnexo(Base):
@@ -14,3 +14,5 @@ class HistoricoAnexo(Base):
     mensagem: Mapped[str] = mapped_column(Text, nullable=False)
     destinatarios: Mapped[str] = mapped_column(String(255), nullable=False)
     data_envio: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    chamado: Mapped["Chamado"] = relationship("Chamado", back_populates="historicos_anexo")
