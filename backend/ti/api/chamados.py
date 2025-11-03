@@ -648,12 +648,15 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest, db: Session 
             except Exception:
                 pass
 
-        # Tentar emitir eventos Socket.IO de forma síncrona (n��o falha a requisição se falhar)
+        # Tentar emitir eventos Socket.IO de forma síncrona (não falha a requisição se falhar)
         try:
-            # Emit via thread-safe sync method
-            from core.realtime import emit_logout_sync
+            # Broadcast via socketio sync method (thread-safe)
             sio.emit("chamado:deleted", {"id": chamado_id}, skip_sid=None)
-            if notification_id:
+        except Exception as e:
+            print(f"[CHAMADO] Erro ao emitir chamado:deleted: {e}")
+
+        if notification_id:
+            try:
                 sio.emit("notification:new", {
                     "id": notification_id,
                     "tipo": "chamado",
@@ -666,8 +669,8 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest, db: Session 
                     "lido": False,
                     "criado_em": now_brazil_naive().isoformat() if hasattr(now_brazil_naive(), 'isoformat') else None,
                 }, skip_sid=None)
-        except Exception as e:
-            print(f"[CHAMADO] Erro ao emitir eventos Socket.IO: {e}")
+            except Exception as e:
+                print(f"[CHAMADO] Erro ao emitir notification:new: {e}")
 
         return {"ok": True}
     except HTTPException:
