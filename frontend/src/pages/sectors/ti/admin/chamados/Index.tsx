@@ -664,7 +664,8 @@ export default function ChamadosPage() {
                 ⚠️ Atenção: Esta ação é irreversível
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                O chamado será permanentemente deletado, incluindo todo o histórico e anexos.
+                O chamado será permanentemente deletado, incluindo todo o
+                histórico e anexos.
               </p>
             </div>
             <div className="flex items-center gap-2 p-3 bg-red-50 rounded-md border border-red-200">
@@ -675,7 +676,10 @@ export default function ChamadosPage() {
                 onChange={(e) => setConfirmChecked(e.target.checked)}
                 className="w-4 h-4"
               />
-              <label htmlFor="confirm-delete" className="text-sm font-medium cursor-pointer">
+              <label
+                htmlFor="confirm-delete"
+                className="text-sm font-medium cursor-pointer"
+              >
                 Confirmo que desejo deletar este chamado permanentemente
               </label>
             </div>
@@ -696,9 +700,12 @@ export default function ChamadosPage() {
                   if (!confirmId) return;
                   setConfirmLoading(true);
                   try {
-                    const r = await apiFetch(`/chamados/${confirmId}?confirmed=true`, {
-                      method: "DELETE",
-                    });
+                    const r = await apiFetch(
+                      `/chamados/${confirmId}?confirmed=true`,
+                      {
+                        method: "DELETE",
+                      },
+                    );
                     if (!r.ok) {
                       const error = await r.text();
                       console.error("Delete error:", error);
