@@ -590,17 +590,37 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest, db: Session 
         protocolo = ch.protocolo
 
         # Deletar registros relacionados para evitar problemas com foreign keys
-        db.execute(text("DELETE FROM chamado_anexo WHERE chamado_id = :cid"), {"cid": chamado_id})
-        db.execute(text("DELETE FROM ticket_anexos WHERE chamado_id = :cid"), {"cid": chamado_id})
-        db.execute(text("DELETE FROM historico_ticket WHERE chamado_id = :cid"), {"cid": chamado_id})
-        db.execute(text("DELETE FROM historico_status WHERE chamado_id = :cid"), {"cid": chamado_id})
-        db.execute(text("DELETE FROM historico_anexo WHERE chamado_id = :cid"), {"cid": chamado_id})
+        try:
+            db.execute(text("DELETE FROM chamado_anexo WHERE chamado_id = :cid"), {"cid": chamado_id})
+        except Exception as e:
+            print(f"[DEBUG] Erro ao deletar chamado_anexo: {e}")
+
+        try:
+            db.execute(text("DELETE FROM ticket_anexos WHERE chamado_id = :cid"), {"cid": chamado_id})
+        except Exception as e:
+            print(f"[DEBUG] Erro ao deletar ticket_anexos: {e}")
+
+        try:
+            db.execute(text("DELETE FROM historico_ticket WHERE chamado_id = :cid"), {"cid": chamado_id})
+        except Exception as e:
+            print(f"[DEBUG] Erro ao deletar historico_ticket: {e}")
+
+        try:
+            db.execute(text("DELETE FROM historico_status WHERE chamado_id = :cid"), {"cid": chamado_id})
+        except Exception as e:
+            print(f"[DEBUG] Erro ao deletar historico_status: {e}")
+
+        try:
+            db.execute(text("DELETE FROM historico_anexo WHERE chamado_id = :cid"), {"cid": chamado_id})
+        except Exception as e:
+            print(f"[DEBUG] Erro ao deletar historico_anexo: {e}")
 
         # Deletar o chamado
         db.delete(ch)
         db.commit()
 
         # Tentar criar notificação (não falha a requisição se falhar)
+        notification_id = None
         try:
             Notification.__table__.create(bind=engine, checkfirst=True)
             dados = json.dumps({
@@ -620,17 +640,22 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest, db: Session 
             db.add(n)
             db.commit()
             db.refresh(n)
+            notification_id = n.id
         except Exception as e:
             print(f"[CHAMADO] Erro ao criar notificação: {e}")
-            db.rollback()
-
-        # Tentar emitir eventos Socket.IO (não falha a requisição se falhar)
-        try:
-            import anyio
-            anyio.from_thread.run(sio.emit, "chamado:deleted", {"id": chamado_id})
             try:
-                anyio.from_thread.run(sio.emit, "notification:new", {
-                    "id": n.id if 'n' in locals() else chamado_id,
+                db.rollback()
+            except Exception:
+                pass
+
+        # Tentar emitir eventos Socket.IO de forma síncrona (n��o falha a requisição se falhar)
+        try:
+            # Emit via thread-safe sync method
+            from core.realtime import emit_logout_sync
+            sio.emit("chamado:deleted", {"id": chamado_id}, skip_sid=None)
+            if notification_id:
+                sio.emit("notification:new", {
+                    "id": notification_id,
                     "tipo": "chamado",
                     "titulo": f"Chamado excluído: {codigo}",
                     "mensagem": f"Chamado {protocolo} removido",
@@ -640,9 +665,7 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest, db: Session 
                     "dados": json.dumps({"id": chamado_id, "codigo": codigo, "protocolo": protocolo}, ensure_ascii=False),
                     "lido": False,
                     "criado_em": now_brazil_naive().isoformat() if hasattr(now_brazil_naive(), 'isoformat') else None,
-                })
-            except Exception:
-                pass
+                }, skip_sid=None)
         except Exception as e:
             print(f"[CHAMADO] Erro ao emitir eventos Socket.IO: {e}")
 
