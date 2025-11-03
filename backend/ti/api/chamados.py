@@ -661,7 +661,7 @@ def deletar_chamado_debug(chamado_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{chamado_id}")
-def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest, db: Session = Depends(get_db)):
+def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest = None, db: Session = Depends(get_db)):
     try:
         # Validar confirmação
         if not payload.confirmed:
