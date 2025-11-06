@@ -17,9 +17,9 @@ import SectorPage from "./pages/Sector";
 import TiPage from "./pages/sectors/ti/TiPage";
 import BIPage from "./pages/sectors/bi/BIPage";
 import DashboardPage from "./pages/sectors/bi/dashboards/DashboardPage";
+import ComprasPage from "./pages/sectors/compras/ComprasPage";
+import ManutencaoPage from "./pages/sectors/manutencao/ManutencaoPage";
 import {
-  ComprasPage,
-  ManutencaoPage,
   FinanceiroPage,
   MarketingPage,
   ProdutosPage,
