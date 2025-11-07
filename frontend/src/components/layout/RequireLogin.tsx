@@ -12,18 +12,6 @@ export default function RequireLogin({
   const [remoteUser, setRemoteUser] = useState<any | null>(null);
   const [checking, setChecking] = useState(false);
 
-  // Mostrar loading enquanto verifica autenticação inicial
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 bg-primary rounded-lg mx-auto mb-4 animate-pulse"></div>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Permitir bypass temporário (para navegação após login)
   const bypassGate = location.state?.bypassGate;
   const pathname = location.pathname || "";
@@ -121,6 +109,18 @@ export default function RequireLogin({
     };
     // Intentionally include pathname so checks run when navigating to sector pages
   }, [isAuthenticated, user?.id, pathname]);
+
+  // Mostrar loading enquanto verifica autenticação inicial
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 bg-primary rounded-lg mx-auto mb-4 animate-pulse"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Use remoteUser if available, else fallback to local user
   const effectiveUser = remoteUser || user;
