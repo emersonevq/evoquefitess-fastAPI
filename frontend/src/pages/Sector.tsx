@@ -1,6 +1,6 @@
 import Layout from "@/components/layout/Layout";
 import { sectors } from "@/data/sectors";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +33,11 @@ interface Ticket {
 export default function SectorPage() {
   const { slug } = useParams<{ slug: string }>();
   const sector = sectors.find((s) => s.slug === slug);
+
+  // Redirect BI slug to the dedicated BI portal route
+  if (slug === "bi") {
+    return <Navigate to="/setor/bi" replace />;
+  }
 
   const isTI = slug === "ti";
 
