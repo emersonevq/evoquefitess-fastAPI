@@ -563,26 +563,34 @@
     border-color: #ea580c !important;
   }
 
-  /* Estados de fullscreen - REMOVE TUDO QUE ATRAPALHA */
+  /* Estados de fullscreen - REMOVE TUDO QUE ATRAPALHA (ajustado para respeitar header) */
   :fullscreen .bi-embed-card,
-  :-webkit-full-screen .bi-embed-card,
-  :fullscreen .bi-embed-card *,
-  :-webkit-full-screen .bi-embed-card * {
+  :-webkit-full-screen .bi-embed-card {
     width: 100vw !important;
-    height: 100vh !important;
+    height: calc(100vh - 70px) !important; /* reserve space for the fixed header */
     max-width: 100vw !important;
-    max-height: 100vh !important;
+    max-height: calc(100vh - 70px) !important;
     border-radius: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  :fullscreen .bi-embed-card *,
+  :-webkit-full-screen .bi-embed-card * {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    box-sizing: border-box !important;
   }
 
   :fullscreen .bi-embed-iframe,
   :-webkit-full-screen .bi-embed-iframe {
-    width: 100vw !important;
-    height: 100vh !important;
+    width: 100% !important;
+    height: 100% !important; /* will match card's calc(100vh - 70px) */
     border-radius: 0 !important;
   }
 
