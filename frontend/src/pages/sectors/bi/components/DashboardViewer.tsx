@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { Dashboard, getPowerBIEmbedUrl } from "../data/dashboards";
-import { Loader, Maximize } from "lucide-react";
+import { Loader } from "lucide-react";
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
@@ -11,9 +11,6 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
   const embedUrl = getPowerBIEmbedUrl(dashboard.reportId);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fitMode, setFitMode] = useState(true);
-
-  const toggleFit = () => setFitMode((f) => !f);
 
   const toggleFullscreen = async () => {
     try {
@@ -33,25 +30,18 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="px-6 py-3 border-b bg-transparent flex items-center justify-between">
+      {/* Header compacto */}
+      <div className="px-4 py-2 border-b bg-white flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-primary">{dashboard.title}</h1>
-          <p className="text-sm text-muted-foreground">{dashboard.description}</p>
+          <h1 className="text-base font-semibold text-gray-900">{dashboard.title}</h1>
+          <p className="text-xs text-gray-600">{dashboard.description}</p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            aria-label="Fit"
-            onClick={toggleFit}
-            className="rounded-md p-2 bg-secondary/40 hover:bg-secondary/60"
-          >
-            <span className="text-sm">Fit</span>
-          </button>
-
-          <button
             aria-label="Fullscreen"
             onClick={toggleFullscreen}
-            className="rounded-md p-2 bg-secondary/40 hover:bg-secondary/60"
+            className="rounded p-1.5 bg-gray-100 hover:bg-gray-200 transition-colors"
           >
             {isFullscreen ? (
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,19 +60,20 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         </div>
       </div>
 
-      <div className="flex-1 p-2 bi-viewer-outer" ref={containerRef}>
+      {/* Container principal OTIMIZADO */}
+      <div className="flex-1 bi-viewer-outer" ref={containerRef}>
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
             <div className="flex flex-col items-center gap-3">
-              <Loader className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Carregando dashboard...</p>
+              <Loader className="w-6 h-6 animate-spin text-primary" />
+              <p className="text-sm text-gray-600">Carregando dashboard...</p>
             </div>
           </div>
         )}
 
         <div className="bi-embed-card">
           <div className="bi-embed-viewport">
-            <div className={`bi-embed-inner ${fitMode ? "fit" : "constrained"}`}>
+            <div className="bi-embed-inner">
               <iframe
                 title={dashboard.title}
                 src={embedUrl}
