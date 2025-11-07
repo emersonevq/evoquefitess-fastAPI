@@ -252,20 +252,21 @@
 
   /* Sidebar compacta e eficiente */
   .bi-sidebar {
-    width: 220px;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.95), rgba(10, 10, 10, 0.98));
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    width: 260px; /* slightly wider for longer dashboard names */
+    background: linear-gradient(180deg, rgba(8, 8, 10, 0.98), rgba(18, 18, 20, 0.99));
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     flex-shrink: 0;
     z-index: 30;
+    padding-top: 6px;
   }
 
   .bi-sidebar-header {
-    padding: 16px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 14px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     gap: 10px;
     align-items: center;
@@ -273,69 +274,75 @@
   }
 
   .bi-logo {
-    height: 28px;
+    height: 30px;
     width: auto;
     border-radius: 4px;
   }
 
   .bi-sidebar-title {
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: 700;
+    font-size: 0.98rem;
     color: white;
     letter-spacing: -0.01em;
   }
 
   .bi-nav {
-    padding: 8px;
+    padding: 8px 10px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
     flex: 1;
   }
 
   .bi-item {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.85);
+    align-items: flex-start; /* allow multi-line labels */
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.95);
     background: transparent;
     text-align: left;
     width: 100%;
     border: none;
     cursor: pointer;
-    transition: all 120ms ease;
-    font-size: 0.875rem;
+    transition: all 160ms cubic-bezier(.2,.9,.2,1);
+    font-size: 0.92rem;
     position: relative;
+    min-height: 48px;
   }
 
   .bi-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
     color: white;
+    transform: translateX(4px);
   }
 
   .bi-item.active {
-    background: linear-gradient(90deg, hsl(24, 94%, 50%), hsl(16, 100%, 45%));
+    background: linear-gradient(90deg, hsl(24 94% 50%), hsl(16 100% 45%));
     color: white;
-    box-shadow: 0 2px 8px rgba(255, 107, 0, 0.3);
-    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(255, 107, 0, 0.18);
+    font-weight: 700;
+    transform: none;
   }
 
   .bi-item-icon {
-    width: 14px;
+    width: 16px;
     text-align: center;
-    font-size: 10px;
-    opacity: 0.9;
+    font-size: 12px;
+    opacity: 0.95;
     flex-shrink: 0;
+    margin-top: 6px; /* align with multiline label top */
   }
 
   .bi-item-label {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
+    white-space: normal; /* allow wrapping */
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+    display: block;
+    word-break: break-word;
   }
 
   /* Área de conteúdo principal - FUNDO BRANCO LIMPO */
