@@ -7,7 +7,7 @@ import { dashboardsData, getAllDashboards, Dashboard } from "./data/dashboards";
 
 export default function BiPage() {
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(
-    null
+    null,
   );
   const [viewMode, setViewMode] = useState<"grid" | "viewer">("grid");
 

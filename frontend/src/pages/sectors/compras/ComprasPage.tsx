@@ -21,7 +21,9 @@ export default function ComprasPage() {
             <div className="flex items-start justify-between mb-4">
               <ShoppingCart className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="font-semibold text-lg mb-2">Solicitações de Compra</h2>
+            <h2 className="font-semibold text-lg mb-2">
+              Solicitações de Compra
+            </h2>
             <p className="text-sm text-muted-foreground mb-4">
               Registre e acompanhe novas solicitações de compra
             </p>

@@ -14,7 +14,7 @@ export default function DashboardSidebar({
   onSelectDashboard,
 }: DashboardSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(categories.map((c) => c.id))
+    new Set(categories.map((c) => c.id)),
   );
 
   const toggleCategory = (categoryId: string) => {

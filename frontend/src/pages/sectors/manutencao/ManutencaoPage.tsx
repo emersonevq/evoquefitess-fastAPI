@@ -21,7 +21,9 @@ export default function ManutencaoPage() {
             <div className="flex items-start justify-between mb-4">
               <Wrench className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="font-semibold text-lg mb-2">Solicitações de Reparo</h2>
+            <h2 className="font-semibold text-lg mb-2">
+              Solicitações de Reparo
+            </h2>
             <p className="text-sm text-muted-foreground mb-4">
               Abra novas solicitações de reparo e manutenção
             </p>
@@ -48,7 +50,9 @@ export default function ManutencaoPage() {
             <div className="flex items-start justify-between mb-4">
               <Wrench className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="font-semibold text-lg mb-2">Histórico de Serviços</h2>
+            <h2 className="font-semibold text-lg mb-2">
+              Histórico de Serviços
+            </h2>
             <p className="text-sm text-muted-foreground mb-4">
               Consulte reparos e manutenções realizadas anteriormente
             </p>

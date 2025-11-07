@@ -1,9 +1,4 @@
-import {
-  Server,
-  ShoppingCart,
-  Wrench,
-  BarChart3,
-} from "lucide-react";
+import { Server, ShoppingCart, Wrench, BarChart3 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 export type IconType = ComponentType<SVGProps<SVGSVGElement>>;

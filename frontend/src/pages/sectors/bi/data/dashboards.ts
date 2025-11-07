@@ -54,7 +54,12 @@ export const dashboardsData: DashboardCategory[] = [
         description: "Dashboard de vendas e performance comercial",
         reportId: "737afc5a-c604-4583-9e71-3f8e81d0f276",
         category: "comercial",
-        allowedUsers: ["Patricia Madeira", "Iuri Venancio", "Taina Sousa", "Larissa Mota"],
+        allowedUsers: [
+          "Patricia Madeira",
+          "Iuri Venancio",
+          "Taina Sousa",
+          "Larissa Mota",
+        ],
       },
       {
         id: "comercial-geral",
@@ -62,7 +67,12 @@ export const dashboardsData: DashboardCategory[] = [
         description: "Análise geral comercial",
         reportId: "0117fd5b-b3c0-46ff-8c1e-c35ff5d4bb8d",
         category: "comercial",
-        allowedUsers: ["Patricia Madeira", "Iuri Venancio", "Taina Sousa", "Larissa Mota"],
+        allowedUsers: [
+          "Patricia Madeira",
+          "Iuri Venancio",
+          "Taina Sousa",
+          "Larissa Mota",
+        ],
       },
     ],
   },
