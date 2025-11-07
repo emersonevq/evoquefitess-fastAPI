@@ -1,6 +1,6 @@
+import React, { useState, useRef } from "react";
 import { Dashboard, getPowerBIEmbedUrl } from "../data/dashboards";
 import { Loader, ZoomIn, ZoomOut, Maximize } from "lucide-react";
-import { useState } from "react";
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
