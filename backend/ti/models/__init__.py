@@ -7,6 +7,7 @@ from .ticket_anexo import TicketAnexo
 from .chamado_anexo import ChamadoAnexo
 from .historico_ticket import HistoricoTicket
 from .historico_status import HistoricoStatus
+from .historico_anexo import HistoricoAnexo
 from .media import Media
 from .alert import Alert
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "ChamadoAnexo",
     "HistoricoTicket",
     "HistoricoStatus",
+    "HistoricoAnexo",
     "Media",
     "Alert",
 ]
