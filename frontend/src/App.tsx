@@ -151,14 +151,6 @@ const App = () => (
             }
           />
           <Route
-            path="/setor/ti"
-            element={
-              <RequireLogin>
-                <TiPage />
-              </RequireLogin>
-            }
-          />
-          <Route
             path="/setor/:slug"
             element={
               <RequireLogin>
