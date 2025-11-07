@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Dashboard, getPowerBIEmbedUrl } from "../data/dashboards";
 import { Loader } from "lucide-react";
 
@@ -12,17 +12,23 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Sync fullscreen state with browser events (handles Esc key and other exits)
+  useEffect(() => {
+    const handler = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
   const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
         if (containerRef.current) {
           await containerRef.current.requestFullscreen();
-          setIsFullscreen(true);
         }
       } else {
         await document.exitFullscreen();
-        setIsFullscreen(false);
       }
+      // state will be synced by fullscreenchange listener
     } catch (e) {
       // ignore
     }
@@ -30,8 +36,8 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Header compacto */}
-      <div className="px-4 py-2 border-b bg-white flex items-center justify-between">
+      {/* Header compacto (aparece normalmente; in fullscreen será reposicionado por CSS) */}
+      <div className="bi-dashboard-header px-4 py-2 border-b bg-white flex items-center justify-between">
         <div>
           <h1 className="text-base font-semibold text-gray-900">{dashboard.title}</h1>
           <p className="text-xs text-gray-600">{dashboard.description}</p>
@@ -39,9 +45,9 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
 
         <div className="flex items-center gap-2">
           <button
-            aria-label="Fullscreen"
+            aria-label={isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
             onClick={toggleFullscreen}
-            className="rounded p-1.5 bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="bi-control-button"
           >
             {isFullscreen ? (
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -63,7 +69,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
       {/* Container principal OTIMIZADO */}
       <div className="flex-1 bi-viewer-outer" ref={containerRef}>
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+          <div className="bi-loading-overlay">
             <div className="flex flex-col items-center gap-3">
               <Loader className="w-6 h-6 animate-spin text-primary" />
               <p className="text-sm text-gray-600">Carregando dashboard...</p>
@@ -85,6 +91,17 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
             </div>
           </div>
         </div>
+
+        {/* Floating exit button visible in fullscreen mode */}
+        {isFullscreen && (
+          <button
+            onClick={toggleFullscreen}
+            className="bi-fullscreen-toggle"
+            aria-label="Sair da tela cheia"
+          >
+            ×
+          </button>
+        )}
       </div>
     </div>
   );
