@@ -45,15 +45,15 @@ export default function BiPage() {
           />
         </div>
       ) : selectedDashboard ? (
-        <div className="flex h-screen bg-white">
+        <div className="flex h-screen">
           <DashboardSidebar
             categories={dashboardsData}
             selectedDashboard={selectedDashboard}
             onSelectDashboard={handleSelectDashboard}
           />
 
-          <div className="flex-1 flex flex-col">
-            <div className="px-6 py-3 border-b bg-gray-50 flex items-center justify-between">
+          <div className="flex-1 flex flex-col bg-[transparent]">
+            <div className="px-6 py-3 border-b bg-transparent flex items-center justify-between">
               <button
                 onClick={() => setViewMode("grid")}
                 className="text-sm text-primary hover:text-primary/80 font-medium"
