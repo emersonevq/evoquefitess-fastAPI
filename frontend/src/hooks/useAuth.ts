@@ -23,13 +23,28 @@ function readFromStorage(): AuthUser | null {
   const now = Date.now();
   const LEGACY_EXPIRY = 24 * 60 * 60 * 1000; // compat 24h
 
+  // Helper to validate required fields
+  const isValidUser = (data: any): boolean => {
+    return (
+      data &&
+      typeof data.email === "string" &&
+      data.email.length > 0 &&
+      typeof data.name === "string" &&
+      data.name.length > 0 &&
+      typeof data.loginTime === "number" &&
+      data.loginTime > 0
+    );
+  };
+
   // 1) Preferir sessão atual (sessionStorage)
   const sessionRaw = sessionStorage.getItem(AUTH_KEY);
   if (sessionRaw) {
     try {
       const data = JSON.parse(sessionRaw) as Partial<AuthRecord & AuthUser>;
+
+      // Check new format with expiresAt
       if (typeof (data as AuthRecord).expiresAt === "number") {
-        if (now < (data as AuthRecord).expiresAt) {
+        if (now < (data as AuthRecord).expiresAt && isValidUser(data)) {
           const {
             email,
             name,
@@ -39,18 +54,19 @@ function readFromStorage(): AuthUser | null {
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthRecord & Partial<AuthUser>;
-          if (email && name && loginTime)
-            return {
-              id,
-              email,
-              name,
-              loginTime,
-              nivel_acesso,
-              setores,
-              alterar_senha_primeiro_acesso,
-            } as AuthUser;
+          return {
+            id,
+            email,
+            name,
+            loginTime,
+            nivel_acesso,
+            setores,
+            alterar_senha_primeiro_acesso,
+          } as AuthUser;
         }
-      } else if (typeof data.loginTime === "number") {
+      }
+      // Check legacy format
+      else if (typeof data.loginTime === "number" && isValidUser(data)) {
         if (now - data.loginTime < LEGACY_EXPIRY) {
           const {
             email,
@@ -61,20 +77,22 @@ function readFromStorage(): AuthUser | null {
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthUser & Partial<AuthRecord>;
-          if (email && name && loginTime)
-            return {
-              id,
-              email,
-              name,
-              loginTime,
-              nivel_acesso,
-              setores,
-              alterar_senha_primeiro_acesso,
-            } as AuthUser;
+          return {
+            id,
+            email,
+            name,
+            loginTime,
+            nivel_acesso,
+            setores,
+            alterar_senha_primeiro_acesso,
+          } as AuthUser;
         }
       }
+
+      // Data is expired or invalid, remove it
       sessionStorage.removeItem(AUTH_KEY);
-    } catch {
+    } catch (e) {
+      console.debug("[AUTH] Failed to parse sessionStorage:", e);
       sessionStorage.removeItem(AUTH_KEY);
     }
   }
@@ -84,8 +102,10 @@ function readFromStorage(): AuthUser | null {
   if (localRaw) {
     try {
       const data = JSON.parse(localRaw) as Partial<AuthRecord & AuthUser>;
+
+      // Check new format with expiresAt
       if (typeof (data as AuthRecord).expiresAt === "number") {
-        if (now < (data as AuthRecord).expiresAt) {
+        if (now < (data as AuthRecord).expiresAt && isValidUser(data)) {
           const {
             email,
             name,
@@ -95,18 +115,19 @@ function readFromStorage(): AuthUser | null {
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthRecord & Partial<AuthUser>;
-          if (email && name && loginTime)
-            return {
-              id,
-              email,
-              name,
-              loginTime,
-              nivel_acesso,
-              setores,
-              alterar_senha_primeiro_acesso,
-            } as AuthUser;
+          return {
+            id,
+            email,
+            name,
+            loginTime,
+            nivel_acesso,
+            setores,
+            alterar_senha_primeiro_acesso,
+          } as AuthUser;
         }
-      } else if (typeof data.loginTime === "number") {
+      }
+      // Check legacy format
+      else if (typeof data.loginTime === "number" && isValidUser(data)) {
         if (now - data.loginTime < LEGACY_EXPIRY) {
           const {
             email,
@@ -117,20 +138,22 @@ function readFromStorage(): AuthUser | null {
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthUser & Partial<AuthRecord>;
-          if (email && name && loginTime)
-            return {
-              id,
-              email,
-              name,
-              loginTime,
-              nivel_acesso,
-              setores,
-              alterar_senha_primeiro_acesso,
-            } as AuthUser;
+          return {
+            id,
+            email,
+            name,
+            loginTime,
+            nivel_acesso,
+            setores,
+            alterar_senha_primeiro_acesso,
+          } as AuthUser;
         }
       }
+
+      // Data is expired or invalid, remove it
       localStorage.removeItem(AUTH_KEY);
-    } catch {
+    } catch (e) {
+      console.debug("[AUTH] Failed to parse localStorage:", e);
       localStorage.removeItem(AUTH_KEY);
     }
   }
