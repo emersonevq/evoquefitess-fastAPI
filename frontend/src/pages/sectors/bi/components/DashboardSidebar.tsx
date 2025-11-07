@@ -35,7 +35,6 @@ export default function DashboardSidebar({
             title={dashboard.title}
             aria-current={selectedDashboard?.id === dashboard.id}
           >
-            <span className="bi-item-icon">●</span>
             <span className="bi-item-label">{dashboard.title}</span>
           </button>
         ))}
