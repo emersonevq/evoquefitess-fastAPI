@@ -264,12 +264,21 @@
   }
   .bi-content.full {
     left: 0;
+    top: 0; /* ensure full-bleed from very top when used */
   }
   .bi-embed-iframe.full-bleed {
-    width: calc(100vw - 0px);
-    height: calc(100vh - 44px);
+    width: 100vw;
+    height: 100vh;
     border: 0;
     display: block;
+  }
+
+  /* When layout root has bi-fullscreen class, hide header and prevent scrolling */
+  .bi-fullscreen > header {
+    display: none !important;
+  }
+  .bi-fullscreen {
+    overflow: hidden !important;
   }
   .bi-sidebar-header {
     padding: 16px 14px;
