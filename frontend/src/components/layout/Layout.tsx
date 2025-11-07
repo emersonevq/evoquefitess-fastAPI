@@ -79,12 +79,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ti: "TI",
     compras: "Compras",
     manutencao: "Manutencao",
-    financeiro: "Financeiro",
-    marketing: "Marketing",
-    produtos: "Produtos",
-    comercial: "Comercial",
-    "outros-servicos": "Outros",
-    servicos: "Outros",
+    bi: "BI",
   };
   const canAccess = (slug: string) => {
     if (!user) return false;
