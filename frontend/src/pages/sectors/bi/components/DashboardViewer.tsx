@@ -14,7 +14,14 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
 
   // Sync fullscreen state with browser events (handles Esc key and other exits)
   useEffect(() => {
-    const handler = () => setIsFullscreen(Boolean((document as any).fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement));
+    const handler = () =>
+      setIsFullscreen(
+        Boolean(
+          (document as any).fullscreenElement ||
+            (document as any).webkitFullscreenElement ||
+            (document as any).mozFullScreenElement,
+        ),
+      );
     document.addEventListener("fullscreenchange", handler);
     document.addEventListener("webkitfullscreenchange", handler);
     document.addEventListener("mozfullscreenchange", handler);
@@ -28,20 +35,26 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
   const toggleFullscreen = async () => {
     try {
       const docAny = document as any;
-      const isInFs = !!(docAny.fullscreenElement || docAny.webkitFullscreenElement || docAny.mozFullScreenElement);
+      const isInFs = !!(
+        docAny.fullscreenElement ||
+        docAny.webkitFullscreenElement ||
+        docAny.mozFullScreenElement
+      );
 
       if (!isInFs) {
         if (containerRef.current) {
           const el: any = containerRef.current;
           if (el.requestFullscreen) await el.requestFullscreen();
-          else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+          else if (el.webkitRequestFullscreen)
+            await el.webkitRequestFullscreen();
           else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
           // optimistically set state so controls appear even if vendor events don't fire
           setIsFullscreen(true);
         }
       } else {
         if (document.exitFullscreen) await document.exitFullscreen();
-        else if (docAny.webkitExitFullscreen) await docAny.webkitExitFullscreen();
+        else if (docAny.webkitExitFullscreen)
+          await docAny.webkitExitFullscreen();
         else if (docAny.mozCancelFullScreen) await docAny.mozCancelFullScreen();
         setIsFullscreen(false);
       }
@@ -55,27 +68,77 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
       {/* Header compacto (aparece normalmente; in fullscreen será reposicionado por CSS) */}
       <div className="bi-dashboard-header px-4 py-2 border-b bg-white flex items-center justify-between">
         <div>
-          <h1 className="text-base font-semibold text-gray-900">{dashboard.title}</h1>
+          <h1 className="text-base font-semibold text-gray-900">
+            {dashboard.title}
+          </h1>
           <p className="text-xs text-gray-600">{dashboard.description}</p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            aria-label={isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
+            aria-label={
+              isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"
+            }
             onClick={toggleFullscreen}
             className="bi-control-button"
           >
             {isFullscreen ? (
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 9L5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M15 15L19 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M9 9L5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M15 15L19 19"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 3H5a2 2 0 0 0-2 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M15 21h4a2 2 0 0 0 2-2v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M21 9V5a2 2 0 0 0-2-2h-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M3 15v4a2 2 0 0 0 2 2h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M9 3H5a2 2 0 0 0-2 2v4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M15 21h4a2 2 0 0 0 2-2v-4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M21 9V5a2 2 0 0 0-2-2h-4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M3 15v4a2 2 0 0 0 2 2h4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             )}
           </button>
