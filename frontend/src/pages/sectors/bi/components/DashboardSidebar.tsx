@@ -13,19 +13,8 @@ export default function DashboardSidebar({
   selectedDashboard,
   onSelectDashboard,
 }: DashboardSidebarProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(categories.map((c) => c.id)),
-  );
-
-  const toggleCategory = (categoryId: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId);
-    } else {
-      newExpanded.add(categoryId);
-    }
-    setExpandedCategories(newExpanded);
-  };
+  // Flatten categories into a single dashboards array to match the screenshot
+  const dashboards = categories.flatMap((c) => c.dashboards);
 
   return (
     <aside className="bi-sidebar">
@@ -39,38 +28,19 @@ export default function DashboardSidebar({
       </div>
 
       <nav className="bi-nav" aria-label="Dashboards navigation">
-        {categories.map((category) => (
-          <div key={category.id} className="sidebar-group">
-            <button
-              onClick={() => toggleCategory(category.id)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-transparent transition text-sm font-medium"
-            >
-              <span>{category.name}</span>
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  expandedCategories.has(category.id) ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {expandedCategories.has(category.id) && (
-              <div className="pl-2 space-y-1">
-                {category.dashboards.map((dashboard) => (
-                  <button
-                    key={dashboard.id}
-                    onClick={() => onSelectDashboard(dashboard)}
-                    className={`bi-item ${
-                      selectedDashboard?.id === dashboard.id ? "active" : ""
-                    }`}
-                    title={dashboard.title}
-                  >
-                    <span className="bi-item-icon">●</span>
-                    <span className="bi-item-label">{dashboard.title}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        {dashboards.map((dashboard) => (
+          <button
+            key={dashboard.id}
+            onClick={() => onSelectDashboard(dashboard)}
+            className={`bi-item ${
+              selectedDashboard?.id === dashboard.id ? "active" : ""
+            }`}
+            title={dashboard.title}
+            aria-current={selectedDashboard?.id === dashboard.id}
+          >
+            <span className="bi-item-icon">●</span>
+            <span className="bi-item-label">{dashboard.title}</span>
+          </button>
         ))}
       </nav>
     </aside>
