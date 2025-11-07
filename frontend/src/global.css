@@ -304,7 +304,7 @@
     display: flex;
     align-items: flex-start; /* allow multi-line labels */
     gap: 10px;
-    padding: 12px 14px;
+    padding: 12px 18px 12px 24px; /* leave space for left accent */
     border-radius: 8px;
     color: rgba(255, 255, 255, 0.95);
     background: transparent;
@@ -315,7 +315,34 @@
     transition: all 160ms cubic-bezier(.2,.9,.2,1);
     font-size: 0.92rem;
     position: relative;
-    min-height: 48px;
+    min-height: 56px;
+    overflow: hidden;
+  }
+
+  /* left accent indicator (hidden when not active) */
+  .bi-item::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 6px;
+    border-radius: 6px;
+    background: transparent;
+    transition: all 180ms ease;
+    box-shadow: none;
+    opacity: 0;
+  }
+
+  .bi-item:hover::before {
+    opacity: 0.12;
+    background: linear-gradient(180deg, hsl(24 94% 50%), hsl(16 100% 45%));
+  }
+
+  .bi-item.active::before {
+    opacity: 1;
+    background: linear-gradient(180deg, hsl(24 94% 50%), hsl(16 100% 45%));
+    box-shadow: 0 6px 18px rgba(255, 107, 0, 0.12);
   }
 
   .bi-item:hover {
