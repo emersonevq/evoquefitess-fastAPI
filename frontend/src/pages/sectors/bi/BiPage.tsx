@@ -10,64 +10,32 @@ export default function BiPage() {
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(
     getAllDashboards()[0] || null,
   );
-  const [viewMode, setViewMode] = useState<"grid" | "viewer">("viewer");
-
-  useEffect(() => {
-    if (viewMode === "viewer" && !selectedDashboard) {
-      const firstDashboard = getAllDashboards()[0];
-      if (firstDashboard) {
-        setSelectedDashboard(firstDashboard);
-      }
-    }
-  }, [viewMode, selectedDashboard]);
 
   const handleSelectDashboard = (dashboard: Dashboard) => {
     setSelectedDashboard(dashboard);
-    setViewMode("viewer");
   };
 
+  // Always render viewer layout (match requested design exactly)
   return (
     <Layout>
-      {viewMode === "grid" ? (
-        <div className="container py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">
-              Portal de BI
-            </h1>
-            <p className="text-muted-foreground">
-              Analise dados e visualize insights em dashboards interativos
-            </p>
+      <div className="flex h-screen">
+        <DashboardSidebar
+          categories={dashboardsData}
+          selectedDashboard={selectedDashboard}
+          onSelectDashboard={handleSelectDashboard}
+        />
+
+        <div className="flex-1 flex flex-col bg-[color:var(--background)]">
+          <div className="px-6 py-3 border-b bg-transparent flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">☰</div>
+            <h1 className="text-sm font-medium text-primary-foreground">{selectedDashboard?.title}</h1>
           </div>
 
-          <DashboardGrid
-            dashboards={getAllDashboards()}
-            onSelectDashboard={handleSelectDashboard}
-          />
-        </div>
-      ) : selectedDashboard ? (
-        <div className="flex h-screen">
-          <DashboardSidebar
-            categories={dashboardsData}
-            selectedDashboard={selectedDashboard}
-            onSelectDashboard={handleSelectDashboard}
-          />
-
-          <div className="flex-1 flex flex-col bg-[color:var(--background)]">
-            <div className="px-6 py-3 border-b bg-transparent flex items-center justify-between">
-              <button
-                onClick={() => setViewMode("grid")}
-                className="text-sm text-primary hover:text-primary/80 font-medium"
-              >
-                ← Voltar para Dashboards
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-hidden">
-              <DashboardViewer dashboard={selectedDashboard} />
-            </div>
+          <div className="flex-1 overflow-hidden">
+            {selectedDashboard && <DashboardViewer dashboard={selectedDashboard} />}
           </div>
         </div>
-      ) : null}
+      </div>
     </Layout>
   );
 }
