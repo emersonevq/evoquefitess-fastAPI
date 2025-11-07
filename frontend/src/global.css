@@ -684,6 +684,59 @@
   }
 
   /* CSS DE EMERGÊNCIA - VISIBILIDADE GARANTIDA */
+
+  /* Specific overrides to keep fullscreen controls usable and not orange */
+  /* Keep control buttons subtle inside the dashboard header */
+  .bi-dashboard-header .bi-control-button {
+    background: rgba(255,255,255,0.06) !important;
+    color: rgba(26,32,44,1) !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    box-shadow: none !important;
+    padding: 8px !important;
+    min-width: auto !important;
+  }
+
+  /* Floating close button for fullscreen must be prominent and not overridden */
+  .bi-fullscreen-toggle {
+    position: fixed !important;
+    top: 12px !important;
+    right: 12px !important;
+    z-index: 2147483647 !important; /* max z-index */
+    width: 44px !important;
+    height: 44px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 10px !important;
+    background: rgba(0,0,0,0.6) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 20px !important;
+    border: none !important;
+  }
+
+  :fullscreen .bi-fullscreen-toggle,
+  :-webkit-full-screen .bi-fullscreen-toggle {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure header controls are not accidentally styled as big orange buttons */
+  .bi-content .bi-control-button,
+  .bi-content button.bi-control-button {
+    background: rgba(255,255,255,0.06) !important;
+    color: rgba(26,32,44,1) !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    padding: 8px !important;
+    min-width: auto !important;
+    box-shadow: none !important;
+  }
+
+  /* Make sure the large orange overrides don't apply to our subtle controls */
+  .bi-content .bi-fullscreen-button,
+  .bi-content .bi-control-button:not(.force-orange) {
+    background: transparent !important;
+  }
   .bi-content * {
     visibility: visible !important;
     opacity: 1 !important;
