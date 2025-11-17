@@ -12,6 +12,7 @@ router = APIRouter(prefix="/powerbi", tags=["Power BI"])
 
 # Power BI Configuration
 POWERBI_CLIENT_ID = os.getenv("POWERBI_CLIENT_ID", "7cc65d27-294f-47a4-a525-d5efb61871f5")
+POWERBI_CLIENT_SECRET = os.getenv("POWERBI_CLIENT_SECRET", "").strip()
 POWERBI_OBJECT_ID = os.getenv("POWERBI_OBJECT_ID", "ed04a53f-153b-4a99-8104-47e88c0a5476")
 POWERBI_TENANT_ID = os.getenv("POWERBI_TENANT_ID", "9f45f492-87a3-4214-862d-4c0d080aa136")
 POWERBI_DISPLAY_NAME = os.getenv("POWERBI_DISPLAY_NAME", "PORTAL BI")
@@ -23,6 +24,12 @@ POWERBI_API_URL = "https://api.powerbi.com/v1.0/myorg"
 
 async def get_service_principal_token() -> str:
     """Get access token using service principal credentials (Client Credentials Flow)"""
+    if not POWERBI_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=400,
+            detail="Power BI client secret not configured. Please add POWERBI_CLIENT_SECRET to environment variables."
+        )
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -30,19 +37,25 @@ async def get_service_principal_token() -> str:
                 data={
                     "grant_type": "client_credentials",
                     "client_id": POWERBI_CLIENT_ID,
+                    "client_secret": POWERBI_CLIENT_SECRET,
                     "scope": "https://analysis.windows.net/.default",
                 },
             )
-            
+
             if response.status_code != 200:
                 print(f"Token error: {response.text}")
                 raise HTTPException(status_code=401, detail="Failed to get Power BI token")
-            
+
             token_data = response.json()
-            return token_data.get("access_token")
+            access_token = token_data.get("access_token")
+            if not access_token:
+                raise HTTPException(status_code=401, detail="No access token in response")
+            return access_token
     except httpx.RequestError as e:
         print(f"Request error: {e}")
         raise HTTPException(status_code=500, detail="Failed to connect to token service")
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="Failed to authenticate with Power BI")
