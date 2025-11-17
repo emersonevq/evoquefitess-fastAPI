@@ -118,6 +118,10 @@ def criar_chamado(payload: ChamadoCreate, db: Session = Depends(get_db)):
         except Exception:
             pass
         ch = service_criar(db, payload)
+
+        # Sincroniza o chamado com a tabela de SLA
+        _sincronizar_sla(db, ch)
+
         try:
             Notification.__table__.create(bind=engine, checkfirst=True)
             dados = json.dumps({
