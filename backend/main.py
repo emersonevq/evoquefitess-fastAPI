@@ -1,5 +1,6 @@
 from __future__ import annotations
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,11 +31,20 @@ _http.add_middleware(
 def ping():
     return {"message": "pong"}
 
-from fastapi import Depends
+@_http.get("/api/health")
+def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute("SELECT 1")
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        print(f"Database health check failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "database": str(e)}, 500
+
 from sqlalchemy.orm import Session
 from core.db import get_db, engine
 from ti.models.media import Media
-from core.storage import get_storage
 
 
 @_http.get("/api/login-media")
@@ -42,24 +52,46 @@ def login_media(db: Session = Depends(get_db)):
     try:
         try:
             Media.__table__.create(bind=engine, checkfirst=True)
-        except Exception:
-            pass
-        q = db.query(Media).filter(Media.ativo == True).order_by(Media.id.desc()).all()
+        except Exception as create_err:
+            print(f"Erro ao criar tabela: {create_err}")
+        q = db.query(Media).filter(Media.status == "ativo").order_by(Media.id.desc()).all()
         out = []
         for m in q:
+            media_type = "image" if m.tipo == "foto" else "video" if m.tipo == "video" else "image"
             out.append(
                 {
                     "id": m.id,
-                    "type": m.media_type,
-                    "url": m.caminho_arquivo,
-                    "title": m.title,
-                    "description": m.description,
+                    "type": media_type,
+                    "url": f"/api/login-media/{m.id}/download",
+                    "title": m.titulo,
+                    "description": m.descricao,
                     "mime": m.mime_type,
                 }
             )
         return out
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar mídias: {e}")
+        print(f"Erro ao listar mídias: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro ao listar mídias: {str(e)}")
+
+
+@_http.get("/api/login-media/{item_id}/download")
+def download_login_media(item_id: int, db: Session = Depends(get_db)):
+    try:
+        m = db.query(Media).filter(Media.id == int(item_id), Media.status == "ativo").first()
+        if not m or not m.arquivo_blob:
+            raise HTTPException(status_code=404, detail="Mídia não encontrada")
+        filename = m.titulo or "media"
+        return StreamingResponse(
+            iter([m.arquivo_blob]),
+            media_type=m.mime_type or "application/octet-stream",
+            headers={"Content-Disposition": f"inline; filename={filename}"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao baixar mídia: {e}")
 
 
 @_http.post("/api/login-media/upload")
@@ -68,48 +100,43 @@ async def upload_login_media(file: UploadFile = File(...), db: Session = Depends
         raise HTTPException(status_code=400, detail="Arquivo ausente")
     content_type = (file.content_type or "").lower()
     if content_type.startswith("image/"):
-        kind = "image"
+        kind = "foto"
     elif content_type.startswith("video/"):
         kind = "video"
     else:
         raise HTTPException(status_code=400, detail="Tipo de arquivo não suportado")
 
     original_name = Path(file.filename or "arquivo").name
-    ext = Path(original_name).suffix or ""
-    unique_name = f"{uuid.uuid4().hex[:12]}{ext}"
+    titulo = Path(original_name).stem or "mídia"
 
     data = await file.read()
-    try:
-        storage = get_storage()
-        blob_path = f"login-media/{unique_name}"
-        url = storage.upload_bytes(blob_path, data, content_type)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Falha no armazenamento: {e}")
 
     try:
         m = Media(
-            media_type=kind,
-            title=None,
-            description=None,
-            filename=unique_name,
-            caminho_arquivo=url,
+            tipo=kind,
+            titulo=titulo,
+            descricao=None,
+            url=f"/api/login-media/{uuid.uuid4().hex[:8]}/download",
+            arquivo_blob=data,
             mime_type=content_type,
             tamanho_bytes=len(data),
-            conteudo=None,
-            usuario_id=None,
-            ativo=True,
+            status="ativo",
         )
         db.add(m)
         db.commit()
         db.refresh(m)
+        media_type = "image" if kind == "foto" else "video"
         return {
             "id": m.id,
-            "type": m.media_type,
-            "url": m.caminho_arquivo,
+            "type": media_type,
+            "url": f"/api/login-media/{m.id}/download",
             "mime": m.mime_type,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Falha ao salvar registro: {e}")
+        print(f"Falha ao salvar registro: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Falha ao salvar registro: {str(e)}")
 
 
 @_http.delete("/api/login-media/{item_id}")
@@ -118,16 +145,7 @@ async def delete_login_media(item_id: int, db: Session = Depends(get_db)):
         m = db.query(Media).filter(Media.id == int(item_id)).first()
         if not m:
             raise HTTPException(status_code=404, detail="Item não encontrado")
-        # best-effort delete from storage
-        try:
-            if m.filename:
-                blob_path = f"login-media/{m.filename}"
-                storage = get_storage()
-                storage.delete_blob(blob_path)
-        except Exception:
-            pass
-        # mark inactive
-        m.ativo = False
+        m.status = "inativo"
         db.add(m)
         db.commit()
         return {"ok": True}

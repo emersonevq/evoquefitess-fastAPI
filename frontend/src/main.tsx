@@ -55,6 +55,8 @@ import {
   Integracoes as ConfIntegracoes,
   Acoes as ConfAcoes,
 } from "./pages/sectors/ti/admin/configuracoes/pages";
+import LoginMediaConfig from "./pages/sectors/ti/admin/configuracoes/LoginMediaConfig";
+import AlertsConfig from "./pages/sectors/ti/admin/configuracoes/AlertsConfig";
 import {
   Monitoramento as AdminMonitoramento,
   Historico as AdminHistorico,
@@ -131,6 +133,8 @@ const App = () => (
                 <Route path="chamados" element={<ConfChamados />} />
                 <Route path="email" element={<ConfEmail />} />
                 <Route path="integracoes" element={<ConfIntegracoes />} />
+                <Route path="midia-login" element={<LoginMediaConfig />} />
+                <Route path="alertas" element={<AlertsConfig />} />
                 <Route path="acoes" element={<ConfAcoes />} />
               </Route>
             </Route>
