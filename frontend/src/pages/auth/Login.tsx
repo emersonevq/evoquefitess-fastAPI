@@ -6,16 +6,16 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "@/lib/auth-context";
 import LoginMediaPanel from "./components/LoginMediaPanel";
-import { 
-  Eye, 
-  EyeOff, 
-  Lock, 
-  Mail, 
-  ArrowRight, 
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ArrowRight,
   Headphones,
   Shield,
   Zap,
-  Clock
+  Clock,
 } from "lucide-react";
 
 export default function Login() {
@@ -40,7 +40,7 @@ export default function Login() {
       const result: any = await login(email, password, remember);
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get("redirect") || "/";
-      
+
       if (result && result.alterar_senha_primeiro_acesso) {
         navigate("/auth/change-password", { replace: true });
       } else {
@@ -60,9 +60,9 @@ export default function Login() {
 
       {/* Conteúdo principal */}
       <div className="relative z-10 w-full h-screen flex items-center justify-center p-6 md:p-10">
-        <div 
+        <div
           className={`w-full max-w-[480px] transition-all duration-1000 ${
-            mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"
           }`}
         >
           {/* Card de Login */}
@@ -85,9 +85,10 @@ export default function Login() {
                   </p>
                 </div>
               </div>
-              
+
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Acesse o portal para abrir chamados, acompanhar solicitações e obter suporte técnico especializado.
+                Acesse o portal para abrir chamados, acompanhar solicitações e
+                obter suporte técnico especializado.
               </p>
             </div>
 
@@ -131,7 +132,11 @@ export default function Login() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -181,16 +186,18 @@ export default function Login() {
             <div className="mt-6 pt-6 border-t">
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { icon: Shield, label: 'Seguro' },
-                  { icon: Zap, label: 'Rápido' },
-                  { icon: Clock, label: '24/7' }
+                  { icon: Shield, label: "Seguro" },
+                  { icon: Zap, label: "Rápido" },
+                  { icon: Clock, label: "24/7" },
                 ].map((item, i) => (
-                  <div 
+                  <div
                     key={i}
                     className="flex flex-col items-center gap-2 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                   >
                     <item.icon className="w-5 h-5 text-primary" />
-                    <span className="text-xs text-muted-foreground font-medium">{item.label}</span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {item.label}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -199,7 +206,8 @@ export default function Login() {
             {/* Footer */}
             <div className="mt-6 pt-6 border-t">
               <p className="text-xs text-muted-foreground text-center">
-                © {new Date().getFullYear()} Central de Suporte TI — Sistema interno
+                © {new Date().getFullYear()} Central de Suporte TI — Sistema
+                interno
               </p>
             </div>
           </div>

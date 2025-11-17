@@ -20,9 +20,9 @@ export default function ResetPasswordSuccess() {
 
       {/* Conteúdo principal */}
       <div className="relative z-10 w-full h-screen flex items-center justify-center p-6 md:p-10">
-        <div 
+        <div
           className={`w-full max-w-[480px] transition-all duration-1000 ${
-            mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"
           }`}
         >
           {/* Card de Sucesso */}
@@ -59,7 +59,9 @@ export default function ResetPasswordSuccess() {
 
             {/* Título */}
             <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold mb-2">E-mail enviado com sucesso!</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                E-mail enviado com sucesso!
+              </h2>
               <p className="text-sm text-muted-foreground">
                 Enviamos instruções para recuperação da senha
               </p>
@@ -75,13 +77,18 @@ export default function ResetPasswordSuccess() {
 
             {/* Instruções */}
             <div className="mb-6 p-4 bg-secondary/30 rounded-lg border border-border/50">
-              <p className="text-sm font-semibold mb-3 text-center">Próximos passos:</p>
+              <p className="text-sm font-semibold mb-3 text-center">
+                Próximos passos:
+              </p>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
                 <li className="flex items-start gap-3">
                   <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex-shrink-0 mt-0.5">
                     1
                   </span>
-                  <span>Verifique sua caixa de entrada (incluindo spam/lixo eletrônico)</span>
+                  <span>
+                    Verifique sua caixa de entrada (incluindo spam/lixo
+                    eletrônico)
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex-shrink-0 mt-0.5">
@@ -122,7 +129,8 @@ export default function ResetPasswordSuccess() {
             {/* Footer */}
             <div className="mt-6 pt-6 border-t">
               <p className="text-xs text-muted-foreground text-center">
-                © {new Date().getFullYear()} Central de Suporte TI — Sistema interno
+                © {new Date().getFullYear()} Central de Suporte TI — Sistema
+                interno
               </p>
             </div>
           </div>

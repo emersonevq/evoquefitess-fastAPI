@@ -56,9 +56,9 @@ export default function ChangePassword() {
 
       {/* Conteúdo principal */}
       <div className="relative z-10 w-full h-screen flex items-center justify-center p-6 md:p-10">
-        <div 
+        <div
           className={`w-full max-w-[480px] transition-all duration-1000 ${
-            mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"
           }`}
         >
           {/* Card de Alteração de Senha */}
@@ -92,8 +92,8 @@ export default function ChangePassword() {
                 <h2 className="text-xl font-semibold">Alterar senha</h2>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Por segurança, você precisa alterar sua senha antes de continuar. 
-                Escolha uma senha forte com no mínimo 6 caracteres.
+                Por segurança, você precisa alterar sua senha antes de
+                continuar. Escolha uma senha forte com no mínimo 6 caracteres.
               </p>
             </div>
 
@@ -120,7 +120,11 @@ export default function ChangePassword() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -148,20 +152,36 @@ export default function ChangePassword() {
               {senha && (
                 <div className="space-y-1">
                   <div className="flex gap-1">
-                    <div className={`h-1.5 flex-1 rounded-full transition-colors ${
-                      senha.length >= 6 ? 'bg-primary' : 'bg-muted'
-                    }`} />
-                    <div className={`h-1.5 flex-1 rounded-full transition-colors ${
-                      senha.length >= 8 ? 'bg-primary' : 'bg-muted'
-                    }`} />
-                    <div className={`h-1.5 flex-1 rounded-full transition-colors ${
-                      senha.length >= 10 && /[A-Z]/.test(senha) && /[0-9]/.test(senha) ? 'bg-primary' : 'bg-muted'
-                    }`} />
+                    <div
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        senha.length >= 6 ? "bg-primary" : "bg-muted"
+                      }`}
+                    />
+                    <div
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        senha.length >= 8 ? "bg-primary" : "bg-muted"
+                      }`}
+                    />
+                    <div
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        senha.length >= 10 &&
+                        /[A-Z]/.test(senha) &&
+                        /[0-9]/.test(senha)
+                          ? "bg-primary"
+                          : "bg-muted"
+                      }`}
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {senha.length < 6 ? 'Senha fraca' : 
-                     senha.length < 8 ? 'Senha média' : 
-                     senha.length >= 10 && /[A-Z]/.test(senha) && /[0-9]/.test(senha) ? 'Senha forte' : 'Senha boa'}
+                    {senha.length < 6
+                      ? "Senha fraca"
+                      : senha.length < 8
+                        ? "Senha média"
+                        : senha.length >= 10 &&
+                            /[A-Z]/.test(senha) &&
+                            /[0-9]/.test(senha)
+                          ? "Senha forte"
+                          : "Senha boa"}
                   </p>
                 </div>
               )}
@@ -200,7 +220,8 @@ export default function ChangePassword() {
             {/* Footer */}
             <div className="mt-6 pt-6 border-t">
               <p className="text-xs text-muted-foreground text-center">
-                © {new Date().getFullYear()} Central de Suporte TI — Sistema interno
+                © {new Date().getFullYear()} Central de Suporte TI — Sistema
+                interno
               </p>
             </div>
           </div>
