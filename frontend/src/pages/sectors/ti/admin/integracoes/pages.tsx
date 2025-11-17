@@ -121,9 +121,25 @@ export function AdicionarBanco() {
   const load = () => {
     setLoading(true);
     apiFetch("/problemas")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fail"))))
-      .then((data: Problema[]) => Array.isArray(data) && setItems(data))
-      .catch(() => setItems([]))
+      .then((r) => {
+        if (!r.ok) {
+          console.error("API error loading problemas:", r.status, r.statusText);
+          return Promise.reject(new Error(`HTTP ${r.status}`));
+        }
+        return r.json();
+      })
+      .then((data: Problema[]) => {
+        if (Array.isArray(data)) {
+          setItems(data);
+        } else {
+          console.error("Invalid data format from /problemas:", data);
+          setItems([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading problemas:", error);
+        setItems([]);
+      })
       .finally(() => setLoading(false));
   };
 

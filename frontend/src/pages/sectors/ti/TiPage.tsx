@@ -53,18 +53,38 @@ export default function TiPage() {
 
   useEffect(() => {
     if (!open) return;
-    fetch(`${API_BASE}/unidades`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fail"))))
-      .then((data) =>
-        Array.isArray(data) ? setUnidades(data) : setUnidades([]),
-      )
-      .catch(() => setUnidades([]));
-    fetch(`${API_BASE}/problemas`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fail"))))
-      .then((data) =>
-        Array.isArray(data) ? setProblemas(data) : setProblemas([]),
-      )
-      .catch(() => setProblemas([]));
+    apiFetch("/unidades")
+      .then((r) => {
+        if (!r.ok) return Promise.reject(new Error("fail"));
+        return r.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setUnidades(data);
+        else setUnidades([]);
+      })
+      .catch((err) => {
+        console.error("Error loading unidades:", err);
+        setUnidades([]);
+      });
+    apiFetch("/problemas")
+      .then((r) => {
+        if (!r.ok) {
+          console.error("Failed to load problemas:", r.status, r.statusText);
+          return Promise.reject(new Error("fail"));
+        }
+        return r.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setProblemas(data);
+        else {
+          console.error("Invalid problemas data format:", data);
+          setProblemas([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading problemas:", err);
+        setProblemas([]);
+      });
   }, [open]);
 
   return (
