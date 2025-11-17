@@ -67,7 +67,6 @@ def download_login_media(item_id: int, db: Session = Depends(get_db)):
         m = db.query(Media).filter(Media.id == int(item_id), Media.ativo == True).first()
         if not m or not m.conteudo:
             raise HTTPException(status_code=404, detail="Mídia não encontrada")
-        from fastapi.responses import StreamingResponse
         return StreamingResponse(
             iter([m.conteudo]),
             media_type=m.mime_type or "application/octet-stream",
