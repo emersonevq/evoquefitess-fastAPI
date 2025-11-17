@@ -13,17 +13,20 @@ Este documento explica como sincronizar chamados existentes com a tabela de SLA 
 Quando você criar as primeiras configurações de SLA, precisa sincronizar todos os chamados existentes:
 
 #### Via Interface (Recomendado)
+
 1. Acesse: **Painel Administrativo → Configurações → Sincronizar SLA**
 2. Clique em "**Sincronizar Todos os Chamados**"
 3. Aguarde a conclusão
 4. Verifique os resultados
 
 #### Via API (Linha de comando)
+
 ```bash
 curl -X POST http://localhost:8000/api/sla/sync/todos-chamados
 ```
 
 **O que acontece:**
+
 - ✅ Verifica cada chamado existente
 - ✅ Cria histórico inicial de SLA (se não existir)
 - ✅ Calcula métricas de tempo decorrido
@@ -31,6 +34,7 @@ curl -X POST http://localhost:8000/api/sla/sync/todos-chamados
 - ✅ Registra em `historico_sla` para auditoria
 
 **Resultado esperado:**
+
 ```json
 {
   "total_chamados": 150,
@@ -47,6 +51,7 @@ curl -X POST http://localhost:8000/api/sla/sync/todos-chamados
 Após a sincronização inicial, **cada mudança de chamado** é sincronizada automaticamente:
 
 #### Quando um chamado é criado:
+
 ```python
 # Em /api/chamados (POST)
 ch = service_criar(db, payload)
@@ -54,6 +59,7 @@ _sincronizar_sla(db, ch)  # ← Automático!
 ```
 
 #### Quando o status de um chamado é atualizado:
+
 ```python
 # Em /api/chamados/{id}/status (PATCH)
 ch.status = novo
@@ -61,6 +67,7 @@ _sincronizar_sla(db, ch, status_anterior=prev)  # ← Automático!
 ```
 
 **Dados registrados:**
+
 - ID do chamado
 - Status anterior e novo
 - Tempo de resposta (horas)
@@ -74,6 +81,7 @@ _sincronizar_sla(db, ch, status_anterior=prev)  # ← Automático!
 Sempre que o painel administrativo é acessado, os SLAs são **recalculados automaticamente**:
 
 #### Como funciona:
+
 ```typescript
 // Em AdminLayout.tsx
 const { isLoading: isSyncingData } = useSLASync();
@@ -85,6 +93,7 @@ useEffect(() => {
 ```
 
 #### O que recalcula:
+
 - Tempo decorrido desde abertura até agora
 - Comparação com limites de SLA configurados
 - Status atual (ok/vencido/em_andamento/congelado)
@@ -97,16 +106,19 @@ useEffect(() => {
 Use quando alterar as configurações de SLA e quiser atualizar imediatamente:
 
 #### Via Interface
+
 1. Acesse: **Painel Administrativo → Configurações → Sincronizar SLA**
 2. Clique em "**Recalcular SLAs**"
 3. Aguarde a conclusão
 
 #### Via API
+
 ```bash
 curl -X POST http://localhost:8000/api/sla/recalcular/painel
 ```
 
 **Resultado esperado:**
+
 ```json
 {
   "total_recalculados": 150,
@@ -123,7 +135,9 @@ curl -X POST http://localhost:8000/api/sla/recalcular/painel
 ## 📊 Estrutura de Dados
 
 ### Tabela `chamado`
+
 Contém os chamados originais com informações básicas:
+
 ```sql
 - id, codigo, protocolo
 - status (Aberto, Em andamento, Em análise, Concluído, Cancelado)
@@ -132,7 +146,9 @@ Contém os chamados originais com informações básicas:
 ```
 
 ### Tabela `historico_sla`
+
 Registra todas as alterações de SLA para auditoria:
+
 ```sql
 - id, chamado_id, usuario_id
 - acao (sincronizacao, status_atualizado, recalculo_painel)
@@ -147,6 +163,7 @@ Registra todas as alterações de SLA para auditoria:
 ## 🔀 Cenários de Sincronização
 
 ### Cenário 1: Novo Chamado é Aberto
+
 ```
 1. POST /api/chamados → Chamado criado com status "Aberto"
 2. _sincronizar_sla() → Registra em historico_sla
@@ -154,6 +171,7 @@ Registra todas as alterações de SLA para auditoria:
 ```
 
 ### Cenário 2: Status do Chamado é Alterado
+
 ```
 1. PATCH /api/chamados/123/status → Status muda para "Em andamento"
 2. data_primeira_resposta = agora
@@ -162,6 +180,7 @@ Registra todas as alterações de SLA para auditoria:
 ```
 
 ### Cenário 3: Chamado é Concluído
+
 ```
 1. PATCH /api/chamados/123/status → Status muda para "Concluído"
 2. data_conclusao = agora
@@ -171,6 +190,7 @@ Registra todas as alterações de SLA para auditoria:
 ```
 
 ### Cenário 4: Mudança na Configuração de SLA
+
 ```
 1. Edita tempo_resposta_horas de 2 para 4 horas
 2. Clica "Recalcular SLAs"
@@ -230,11 +250,13 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
 ## ⚙️ Endpoints de Sincronização
 
 ### 1. Sincronizar Todos os Chamados
+
 ```
 POST /api/sla/sync/todos-chamados
 ```
 
 **Resposta:**
+
 ```json
 {
   "total_chamados": 150,
@@ -245,11 +267,13 @@ POST /api/sla/sync/todos-chamados
 ```
 
 ### 2. Recalcular SLAs
+
 ```
 POST /api/sla/recalcular/painel
 ```
 
 **Resposta:**
+
 ```json
 {
   "total_recalculados": 150,
@@ -262,11 +286,13 @@ POST /api/sla/recalcular/painel
 ```
 
 ### 3. Obter Status de SLA de um Chamado
+
 ```
 GET /api/sla/chamado/{chamado_id}/status
 ```
 
 **Resposta:**
+
 ```json
 {
   "chamado_id": 1,
@@ -323,13 +349,17 @@ GET /api/sla/chamado/{chamado_id}/status
 ## 🔍 Troubleshooting
 
 ### Problema: "Sincronização diz que atualizou 0 chamados"
+
 **Solução:** Verifique se há chamados no banco. Execute:
+
 ```bash
 curl http://localhost:8000/api/chamados
 ```
 
 ### Problema: "Erro ao sincronizar: Tabela não existe"
+
 **Solução:** As tabelas são criadas automaticamente. Se o erro persistir:
+
 ```python
 # No backend, execute:
 from backend.ti.models.sla_config import SLAConfiguration, HistoricoSLA
@@ -339,6 +369,7 @@ HistoricoSLA.__table__.create(engine, checkfirst=True)
 ```
 
 ### Problema: "SLA mostrado no painel não corresponde à realidade"
+
 **Solução:** Clique em "Recalcular SLAs" na página de sincronização
 
 ---
@@ -346,6 +377,7 @@ HistoricoSLA.__table__.create(engine, checkfirst=True)
 ## 📞 Suporte
 
 Para dúvidas ou problemas, consulte:
+
 - `SLA_IMPLEMENTATION.md` - Documentação técnica completa
 - `/api/sla` - Endpoints disponíveis
 - `useSLASync.ts` - Hook de sincronização frontend

@@ -65,7 +65,9 @@ export function SLAStatusBadge({
   };
 
   return (
-    <div className={`${config.bg} ${config.text} ${config.border} border rounded-lg p-3 space-y-2`}>
+    <div
+      className={`${config.bg} ${config.text} ${config.border} border rounded-lg p-3 space-y-2`}
+    >
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 flex-shrink-0" />
         <span className="text-sm font-medium">{config.label}</span>
@@ -95,8 +97,18 @@ export function SLAStatusBadge({
 interface SLAStatusOverviewProps {
   chamadoId: number;
   prioridade: string;
-  statusResposta: "ok" | "vencido" | "em_andamento" | "congelado" | "sem_configuracao";
-  statusResolucao: "ok" | "vencido" | "em_andamento" | "congelado" | "sem_configuracao";
+  statusResposta:
+    | "ok"
+    | "vencido"
+    | "em_andamento"
+    | "congelado"
+    | "sem_configuracao";
+  statusResolucao:
+    | "ok"
+    | "vencido"
+    | "em_andamento"
+    | "congelado"
+    | "sem_configuracao";
   tempoRepostagem: number;
   tempoResolucao: number;
   limiteResposta: number;
@@ -115,7 +127,9 @@ export function SLAStatusOverview({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold mb-2">Nível de Prioridade: {prioridade}</h3>
+        <h3 className="text-sm font-semibold mb-2">
+          Nível de Prioridade: {prioridade}
+        </h3>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SLAStatusBadge

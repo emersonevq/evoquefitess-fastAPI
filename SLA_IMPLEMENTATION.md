@@ -9,6 +9,7 @@ Um sistema completo de SLA (Service Level Agreement) foi implementado no painel 
 ### 1. Modelos de Banco de Dados (Backend)
 
 #### `SLAConfiguration`
+
 - **Arquivo**: `backend/ti/models/sla_config.py`
 - **Tabela**: `sla_configuration`
 - **Campos**:
@@ -21,6 +22,7 @@ Um sistema completo de SLA (Service Level Agreement) foi implementado no painel 
   - `criado_em`, `atualizado_em`: Timestamps
 
 #### `SLABusinessHours`
+
 - **Arquivo**: `backend/ti/models/sla_config.py`
 - **Tabela**: `sla_business_hours`
 - **Campos**:
@@ -34,6 +36,7 @@ Um sistema completo de SLA (Service Level Agreement) foi implementado no painel 
 **Padrão Padrão**: Segunda a sexta, 08:00 às 18:00
 
 #### `HistoricoSLA`
+
 - **Arquivo**: `backend/ti/models/sla_config.py`
 - **Tabela**: `historico_sla`
 - **Campos**:
@@ -47,6 +50,7 @@ Um sistema completo de SLA (Service Level Agreement) foi implementado no painel 
 ### 2. Serviço de Cálculo de SLA (Backend)
 
 #### `SLACalculator`
+
 - **Arquivo**: `backend/ti/services/sla.py`
 - **Responsabilidades**:
   - Calcular horas de negócio (excluindo fins de semana e fora do horário comercial)
@@ -70,14 +74,17 @@ Um sistema completo de SLA (Service Level Agreement) foi implementado no painel 
 ### 3. API REST (Backend)
 
 #### Endpoints de Configuração
+
 - **Prefixo**: `/api/sla`
 
 **GET /config**: Lista todas as configurações de SLA
+
 ```
 Resposta: Array[SLAConfiguration]
 ```
 
 **POST /config**: Cria nova configuração de SLA
+
 ```json
 {
   "prioridade": "Crítico",
@@ -89,6 +96,7 @@ Resposta: Array[SLAConfiguration]
 ```
 
 **PATCH /config/{config_id}**: Atualiza configuração
+
 ```json
 {
   "tempo_resposta_horas": 2,
@@ -101,11 +109,13 @@ Resposta: Array[SLAConfiguration]
 #### Endpoints de Horários Comerciais
 
 **GET /business-hours**: Lista horários comerciais
+
 ```
 Resposta: Array[SLABusinessHours]
 ```
 
 **POST /business-hours**: Adiciona novo horário
+
 ```json
 {
   "dia_semana": 0,
@@ -122,6 +132,7 @@ Resposta: Array[SLABusinessHours]
 #### Endpoints de Status
 
 **GET /chamado/{chamado_id}/status**: Obtém status de SLA de um chamado
+
 ```json
 {
   "chamado_id": 1,
@@ -136,6 +147,7 @@ Resposta: Array[SLABusinessHours]
 ```
 
 **GET /historico/{chamado_id}**: Lista histórico de SLA
+
 ```
 Resposta: Array[HistoricoSLA]
 ```
@@ -143,6 +155,7 @@ Resposta: Array[HistoricoSLA]
 ### 4. Interface Frontend
 
 #### Página de Configurações de SLA
+
 - **Arquivo**: `frontend/src/pages/sectors/ti/admin/configuracoes/SLAConfig.tsx`
 - **Localização**: Configurações → Configurações de SLA
 - **Funcionalidades**:
@@ -151,12 +164,14 @@ Resposta: Array[HistoricoSLA]
   - Interface intuitiva com diálogos modais
 
 #### Componente de Exibição de Status
+
 - **Arquivo**: `frontend/src/components/sla/SLAStatusBadge.tsx`
 - **Componentes**:
   - `SLAStatusBadge`: Exibe status de SLA individual
   - `SLAStatusOverview`: Visão geral de resposta e resolução
 
 **Statuses**:
+
 - `ok`: Dentro do limite de SLA (verde)
 - `vencido`: Excedeu o limite (vermelho)
 - `em_andamento`: Ainda em progresso, dentro do limite (âmbar)
@@ -164,6 +179,7 @@ Resposta: Array[HistoricoSLA]
 - `sem_configuracao`: Sem SLA configurado (cinza)
 
 #### Hook de Integração
+
 - **Arquivo**: `frontend/src/hooks/useSLAStatus.ts`
 - **Função**: `useSLAStatus(chamadoId)`
 - **Comportamento**:
@@ -174,20 +190,24 @@ Resposta: Array[HistoricoSLA]
 ## Fluxo de Cálculo de SLA
 
 ### 1. Abertura de Chamado
+
 - Data de abertura é registrada
 - Status inicia como "Aberto"
 
 ### 2. Primeira Resposta
+
 - Quando status muda de "Aberto" para outro status
 - `data_primeira_resposta` é calculada
 - SLA de resposta é avaliado
 
 ### 3. Durante o Atendimento
+
 - Status muda entre "Em andamento", "Em análise", etc
 - Cada mudança gera registro em `HistoricoSLA`
 - Para status "Em análise": SLA é congelado (não conta tempo)
 
 ### 4. Conclusão
+
 - Quando status muda para "Concluído" ou "Cancelado"
 - SLA de resolução final é calculado
 - Histórico é registrado
@@ -203,6 +223,7 @@ Fora do horário: Não conta
 ```
 
 **Exemplo**:
+
 - Chamado aberto: Sexta 17:00
 - Primeira resposta: Segunda 08:30
 - Horas contabilizadas:
@@ -215,12 +236,14 @@ Fora do horário: Não conta
 O sistema foi integrado com os endpoints de chamados:
 
 ### Ao atualizar status de chamado:
+
 1. `PATCH /api/chamados/{id}/status` é chamado
 2. Status é atualizado no banco
 3. SLA é calculado
 4. Histórico de SLA é registrado automaticamente
 
 ### Dados registrados:
+
 - Status anterior e novo
 - Tempo de resolução
 - Limite de SLA aplicável

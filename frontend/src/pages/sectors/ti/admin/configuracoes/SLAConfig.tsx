@@ -109,7 +109,10 @@ export function SLA() {
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: async (data: { id: number; updates: Partial<typeof formData> }) => {
+    mutationFn: async (data: {
+      id: number;
+      updates: Partial<typeof formData>;
+    }) => {
       const response = await api.patch(`/sla/config/${data.id}`, data.updates);
       return response.data;
     },
@@ -126,7 +129,9 @@ export function SLA() {
       toast.success("Configuração atualizada com sucesso");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || "Erro ao atualizar configuração");
+      toast.error(
+        error.response?.data?.detail || "Erro ao atualizar configuração",
+      );
     },
   });
 
@@ -139,7 +144,9 @@ export function SLA() {
       toast.success("Configuração removida com sucesso");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || "Erro ao remover configuração");
+      toast.error(
+        error.response?.data?.detail || "Erro ao remover configuração",
+      );
     },
   });
 
@@ -165,7 +172,10 @@ export function SLA() {
 
   const updateHoursMutation = useMutation({
     mutationFn: async (data: { id: number; updates: typeof hoursData }) => {
-      const response = await api.patch(`/sla/business-hours/${data.id}`, data.updates);
+      const response = await api.patch(
+        `/sla/business-hours/${data.id}`,
+        data.updates,
+      );
       return response.data;
     },
     onSuccess: () => {
@@ -266,7 +276,9 @@ export function SLA() {
         updates: hoursData,
       });
     } else {
-      const dayExists = businessHours.some((h: BusinessHours) => h.dia_semana === hoursData.dia_semana);
+      const dayExists = businessHours.some(
+        (h: BusinessHours) => h.dia_semana === hoursData.dia_semana,
+      );
       if (dayExists) {
         toast.error("Horário para este dia já existe");
         return;
@@ -387,7 +399,9 @@ export function SLA() {
                         </p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Resolução:</span>
+                        <span className="text-muted-foreground">
+                          Resolução:
+                        </span>
                         <p className="font-semibold">
                           {config.tempo_resolucao_horas}h
                         </p>
@@ -432,7 +446,9 @@ export function SLA() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>
-                  {editingHours ? "Editar Horário" : "Adicionar Horário Comercial"}
+                  {editingHours
+                    ? "Editar Horário"
+                    : "Adicionar Horário Comercial"}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
@@ -511,7 +527,9 @@ export function SLA() {
               <Card key={hours.id} className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">{getDiaLabel(hours.dia_semana)}</h3>
+                    <h3 className="font-medium">
+                      {getDiaLabel(hours.dia_semana)}
+                    </h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       {hours.hora_inicio} - {hours.hora_fim}
                     </p>

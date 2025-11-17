@@ -18,7 +18,11 @@ interface SLASyncStats {
 export function useSLASync() {
   const queryClient = useQueryClient();
 
-  const { mutate, isPending: isLoading, data: stats } = useMutation({
+  const {
+    mutate,
+    isPending: isLoading,
+    data: stats,
+  } = useMutation({
     mutationFn: async () => {
       const response = await api.post("/sla/recalcular/painel");
       return response.data as SLASyncStats;
@@ -46,7 +50,11 @@ export function useSLASync() {
 export function useSLASyncAll() {
   const queryClient = useQueryClient();
 
-  const { mutate, isPending, data: stats } = useMutation({
+  const {
+    mutate,
+    isPending,
+    data: stats,
+  } = useMutation({
     mutationFn: async () => {
       const response = await api.post("/sla/sync/todos-chamados");
       return response.data;

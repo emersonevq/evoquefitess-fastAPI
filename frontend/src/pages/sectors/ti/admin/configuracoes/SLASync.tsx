@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  AlertCircle,
-  CheckCircle2,
-  RefreshCw,
-  Loader,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, RefreshCw, Loader } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -34,7 +29,7 @@ export function SLASync() {
       toast.success("Sincronização concluída com sucesso!");
     } catch (error: any) {
       toast.error(
-        error.response?.data?.detail || "Erro ao sincronizar chamados"
+        error.response?.data?.detail || "Erro ao sincronizar chamados",
       );
     } finally {
       setLoading(false);
@@ -48,9 +43,7 @@ export function SLASync() {
       setStats(response.data);
       toast.success("Recálculo de SLAs concluído com sucesso!");
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.detail || "Erro ao recalcular SLAs"
-      );
+      toast.error(error.response?.data?.detail || "Erro ao recalcular SLAs");
     } finally {
       setLoading(false);
     }
@@ -64,8 +57,9 @@ export function SLASync() {
           <div className="text-sm text-amber-800 dark:text-amber-200">
             <p className="font-semibold mb-1">Importante</p>
             <p>
-              Use as opções abaixo para sincronizar chamados existentes com a tabela de SLA.
-              A sincronização inicial deve ser feita uma única vez após a criação das configurações de SLA.
+              Use as opções abaixo para sincronizar chamados existentes com a
+              tabela de SLA. A sincronização inicial deve ser feita uma única
+              vez após a criação das configurações de SLA.
             </p>
           </div>
         </div>
@@ -77,8 +71,9 @@ export function SLASync() {
           <div className="space-y-2">
             <h3 className="font-semibold text-lg">Sincronização Inicial</h3>
             <p className="text-sm text-muted-foreground">
-              Sincroniza todos os chamados existentes com a tabela de histórico de SLA.
-              Execute isso uma única vez após criar as configurações de SLA.
+              Sincroniza todos os chamados existentes com a tabela de histórico
+              de SLA. Execute isso uma única vez após criar as configurações de
+              SLA.
             </p>
           </div>
 
@@ -117,8 +112,9 @@ export function SLASync() {
           <div className="space-y-2">
             <h3 className="font-semibold text-lg">Recálculo de SLAs</h3>
             <p className="text-sm text-muted-foreground">
-              Recalcula todos os SLAs com base no estado atual dos chamados.
-              Use isto para atualizar métricas após mudanças nas configurações de SLA.
+              Recalcula todos os SLAs com base no estado atual dos chamados. Use
+              isto para atualizar métricas após mudanças nas configurações de
+              SLA.
             </p>
           </div>
 
@@ -164,7 +160,9 @@ export function SLASync() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {stats.total_chamados && (
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Total de Chamados</p>
+                <p className="text-xs text-muted-foreground">
+                  Total de Chamados
+                </p>
                 <p className="text-2xl font-bold">{stats.total_chamados}</p>
               </div>
             )}
@@ -235,9 +233,7 @@ export function SLASync() {
             {stats.erros !== undefined && stats.erros > 0 && (
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">Erros</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {stats.erros}
-                </p>
+                <p className="text-2xl font-bold text-red-600">{stats.erros}</p>
               </div>
             )}
           </div>

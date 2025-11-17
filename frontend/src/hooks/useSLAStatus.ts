@@ -9,9 +9,19 @@ interface SLAStatus {
   tempo_resposta_limite_horas: number;
   tempo_resolucao_limite_horas: number;
   tempo_resposta_horas: number;
-  tempo_resposta_status: "ok" | "vencido" | "em_andamento" | "congelado" | "sem_configuracao";
+  tempo_resposta_status:
+    | "ok"
+    | "vencido"
+    | "em_andamento"
+    | "congelado"
+    | "sem_configuracao";
   tempo_resolucao_horas: number;
-  tempo_resolucao_status: "ok" | "vencido" | "em_andamento" | "congelado" | "sem_configuracao";
+  tempo_resolucao_status:
+    | "ok"
+    | "vencido"
+    | "em_andamento"
+    | "congelado"
+    | "sem_configuracao";
   data_abertura: string | null;
   data_primeira_resposta: string | null;
   data_conclusao: string | null;
