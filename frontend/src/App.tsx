@@ -21,6 +21,7 @@ import BiPage from "./pages/sectors/bi/BiPage";
 import AdminLayout from "./pages/sectors/ti/admin/AdminLayout";
 import Overview from "./pages/sectors/ti/admin/Overview";
 import ChamadosPage from "./pages/sectors/ti/admin/chamados/Index";
+import AbrirChamadoPage from "./pages/sectors/ti/chamados/Abrir";
 import UsuariosLayout from "./pages/sectors/ti/admin/usuarios/UsuariosLayout";
 import {
   CriarUsuario,
@@ -78,6 +79,14 @@ const App = () => (
             element={
               <RequireLogin>
                 <TiPage />
+              </RequireLogin>
+            }
+          />
+          <Route
+            path="/setor/ti/chamados/abrir"
+            element={
+              <RequireLogin>
+                <AbrirChamadoPage />
               </RequireLogin>
             }
           />
