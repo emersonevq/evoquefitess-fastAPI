@@ -214,3 +214,18 @@ async def check_powerbi_status(db: Session = Depends(get_db)):
             "status": "disconnected",
             "error": str(e),
         }
+
+
+@router.get("/debug/config")
+async def debug_powerbi_config():
+    """Debug endpoint to check current Power BI configuration"""
+    config = get_powerbi_config()
+    return {
+        "client_id": config["client_id"],
+        "client_secret": "***" if config["client_secret"] else "(not configured)",
+        "client_secret_length": len(config["client_secret"]) if config["client_secret"] else 0,
+        "object_id": config["object_id"],
+        "tenant_id": config["tenant_id"],
+        "display_name": config["display_name"],
+        "authority_url": get_authority_url(),
+    }
