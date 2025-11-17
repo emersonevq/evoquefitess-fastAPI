@@ -47,7 +47,9 @@ export default function LoginMediaPanel() {
     align: "center",
     skipSnaps: false,
   });
+  
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const ac = new AbortController();
@@ -66,55 +68,81 @@ export default function LoginMediaPanel() {
   useEffect(() => {
     if (!emblaApi) return;
 
-    let currentVideoListener: (() => void) | null = null;
-
-    const setupSlideAutoplay = () => {
-      // Clean up previous listeners
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (currentVideoListener) currentVideoListener();
-
-      const index = emblaApi.selectedIndex;
-      const item = items[index];
-
-      if (item?.type === "video") {
-        // For videos, wait for video to end
-        const slides = emblaApi.containerNode().querySelectorAll(".embla__slide");
-        const videoEl = slides[index]?.querySelector("video") as HTMLVideoElement | null;
-
-        if (videoEl) {
-          const handleVideoEnded = () => {
-            emblaApi.scrollNext();
-          };
-
-          // Remove any existing listeners first
-          videoEl.removeEventListener("ended", handleVideoEnded);
-          // Add listener with once: true
-          videoEl.addEventListener("ended", handleVideoEnded, { once: true });
-
-          // Store cleanup function
-          currentVideoListener = () => {
-            videoEl.removeEventListener("ended", handleVideoEnded);
-          };
+    const scheduleAutoplay = () => {
+      try {
+        // Clean up previous timeout and listeners
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
         }
-      } else {
-        // For images, schedule next slide after 6 seconds
-        timeoutRef.current = setTimeout(() => {
-          emblaApi.scrollNext();
-        }, 6000);
+        cleanupRef.current();
+        cleanupRef.current = () => {};
+
+        const currentIndex = emblaApi.selectedIndex;
+        const currentItem = items[currentIndex];
+
+        if (currentItem?.type === "video") {
+          // For videos: wait for them to end
+          try {
+            const container = emblaApi.containerNode();
+            if (!container) return;
+
+            const slides = container.querySelectorAll(".embla__slide");
+            const videoElement = slides[currentIndex]?.querySelector("video") as HTMLVideoElement | null;
+
+            if (videoElement && videoElement.duration > 0) {
+              const onVideoEnded = () => {
+                emblaApi.scrollNext();
+              };
+
+              // Clean old listeners
+              videoElement.removeEventListener("ended", onVideoEnded);
+              // Add new listener
+              videoElement.addEventListener("ended", onVideoEnded, { once: true });
+
+              // Store cleanup function
+              cleanupRef.current = () => {
+                videoElement.removeEventListener("ended", onVideoEnded);
+              };
+            }
+          } catch (error) {
+            console.error("[LoginMediaPanel] Error setting up video listener:", error);
+            // Fallback: advance after 6 seconds if something goes wrong
+            timeoutRef.current = setTimeout(() => {
+              emblaApi.scrollNext();
+            }, 6000);
+          }
+        } else {
+          // For images: advance every 6 seconds
+          timeoutRef.current = setTimeout(() => {
+            emblaApi.scrollNext();
+          }, 6000);
+        }
+      } catch (error) {
+        console.error("[LoginMediaPanel] Error in scheduleAutoplay:", error);
       }
     };
 
-    // Setup initial slide
-    setupSlideAutoplay();
+    try {
+      scheduleAutoplay();
+      const unsubscribe = emblaApi.on("select", scheduleAutoplay);
 
-    // Listen for slide changes
-    const unsubscribe = emblaApi.on("select", setupSlideAutoplay);
-
-    return () => {
-      unsubscribe();
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (currentVideoListener) currentVideoListener();
-    };
+      return () => {
+        unsubscribe();
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        cleanupRef.current();
+      };
+    } catch (error) {
+      console.error("[LoginMediaPanel] Error setting up autoplay:", error);
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        cleanupRef.current();
+      };
+    }
   }, [emblaApi, items]);
 
   return (
