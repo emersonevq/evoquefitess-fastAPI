@@ -128,7 +128,7 @@ async def delete_login_media(item_id: int, db: Session = Depends(get_db)):
         m = db.query(Media).filter(Media.id == int(item_id)).first()
         if not m:
             raise HTTPException(status_code=404, detail="Item não encontrado")
-        m.ativo = False
+        m.status = "inativo"
         db.add(m)
         db.commit()
         return {"ok": True}
