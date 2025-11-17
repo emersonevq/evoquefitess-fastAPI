@@ -130,15 +130,6 @@ async def delete_login_media(item_id: int, db: Session = Depends(get_db)):
         m = db.query(Media).filter(Media.id == int(item_id)).first()
         if not m:
             raise HTTPException(status_code=404, detail="Item não encontrado")
-        # best-effort delete from storage
-        try:
-            if m.filename:
-                blob_path = f"login-media/{m.filename}"
-                storage = get_storage()
-                storage.delete_blob(blob_path)
-        except Exception:
-            pass
-        # mark inactive
         m.ativo = False
         db.add(m)
         db.commit()
