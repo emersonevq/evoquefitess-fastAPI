@@ -31,11 +31,9 @@ _http.add_middleware(
 def ping():
     return {"message": "pong"}
 
-from fastapi import Depends
 from sqlalchemy.orm import Session
 from core.db import get_db, engine
 from ti.models.media import Media
-from core.storage import get_storage
 
 
 @_http.get("/api/login-media")
