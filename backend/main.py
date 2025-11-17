@@ -53,6 +53,23 @@ def test_backend():
     return {"status": "Backend está rodando com o código atualizado!", "timestamp": "OK"}
 
 
+@_http.get("/api/debug/routes")
+def debug_routes():
+    """Debug - listar todas as rotas registradas"""
+    routes = []
+    for route in _http.routes:
+        if hasattr(route, 'path'):
+            routes.append({
+                "path": route.path,
+                "methods": getattr(route, 'methods', []) or ['GET'],
+            })
+    return {
+        "total_routes": len(routes),
+        "routes": sorted(routes, key=lambda x: x['path']),
+        "powerbi_embed_token_registered": any("/powerbi/embed-token" in r['path'] for r in routes),
+    }
+
+
 @_http.post("/api/login-media/upload")
 async def upload_login_media(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file:
