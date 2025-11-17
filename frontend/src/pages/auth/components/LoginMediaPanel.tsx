@@ -135,13 +135,15 @@ function Slide({ item }: { item: MediaItem }) {
       ) : item.type === "video" && item.url ? (
         <video
           className="w-full h-full object-cover login-media"
-          src={item.url}
           autoPlay
           muted
           loop
           playsInline
           controls={false}
-        />
+          preload="metadata"
+        >
+          <source src={item.url} type="video/mp4" />
+        </video>
       ) : (
         <div className="w-full h-full flex items-center justify-center p-8">
           <div
