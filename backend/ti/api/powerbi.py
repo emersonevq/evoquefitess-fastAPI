@@ -38,7 +38,7 @@ async def get_service_principal_token() -> str:
                     "grant_type": "client_credentials",
                     "client_id": POWERBI_CLIENT_ID,
                     "client_secret": POWERBI_CLIENT_SECRET,
-                    "scope": "https://analysis.windows.net/.default",
+                    "scope": "https://analysis.windows.net/powerbi/api/.default",
                 },
             )
 
