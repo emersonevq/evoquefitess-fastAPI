@@ -14,7 +14,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Save, Trash2, Ticket as TicketIcon, UserPlus, Paperclip, Image as ImageIcon } from "lucide-react";
+import {
+  Save,
+  Trash2,
+  Ticket as TicketIcon,
+  UserPlus,
+  Paperclip,
+  Image as ImageIcon,
+} from "lucide-react";
 import { ticketsMock } from "../mock";
 import { apiFetch, API_BASE } from "@/lib/api";
 import { useAuthContext } from "@/lib/auth-context";
@@ -156,7 +163,7 @@ function TicketCard({
 
         <div className="pt-2 border-t border-border/40">
           <Select value={sel} onValueChange={(v) => setSel(v as TicketStatus)}>
-            <SelectTrigger 
+            <SelectTrigger
               onClick={(e) => e.stopPropagation()}
               className="h-8 text-xs"
             >
@@ -394,7 +401,7 @@ export default function ChamadosPage() {
           }, 500);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (loadMoreTicketsRef.current) {
@@ -661,10 +668,13 @@ export default function ChamadosPage() {
               </div>
             ))}
           </div>
-          
+
           {/* Sentinel para infinite scroll com loading */}
           {visibleTickets < list.length && (
-            <div ref={loadMoreTicketsRef} className="py-8 flex flex-col items-center justify-center gap-3">
+            <div
+              ref={loadMoreTicketsRef}
+              className="py-8 flex flex-col items-center justify-center gap-3"
+            >
               {isLoadingMore && (
                 <>
                   <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -675,7 +685,7 @@ export default function ChamadosPage() {
               )}
             </div>
           )}
-          
+
           {list.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               Nenhum chamado encontrado
@@ -736,7 +746,8 @@ export default function ChamadosPage() {
                   } catch (e) {
                     toast({
                       title: "Erro",
-                      description: e instanceof Error ? e.message : "Erro ao excluir",
+                      description:
+                        e instanceof Error ? e.message : "Erro ao excluir",
                       variant: "destructive",
                     });
                   } finally {
@@ -794,7 +805,9 @@ export default function ChamadosPage() {
                 {tab === "resumo" && (
                   <div className="grid gap-6 lg:grid-cols-[1fr,320px] pt-4">
                     <div className="rounded-lg border bg-card p-5 space-y-4 h-fit">
-                      <h3 className="font-semibold text-lg">Ficha do chamado</h3>
+                      <h3 className="font-semibold text-lg">
+                        Ficha do chamado
+                      </h3>
                       <div className="grid gap-3 text-sm">
                         {[
                           ["Solicitante", selected.solicitante],
@@ -804,18 +817,32 @@ export default function ChamadosPage() {
                           ["Telefone", selected.telefone],
                           ["Unidade", selected.unidade],
                           ["Problema", selected.categoria],
-                          selected.descricao && ["Descrição", selected.descricao],
-                          selected.internetItem && ["Item Internet", selected.internetItem],
-                          ["Data de abertura", new Date(selected.criadoEm).toLocaleString()],
+                          selected.descricao && [
+                            "Descrição",
+                            selected.descricao,
+                          ],
+                          selected.internetItem && [
+                            "Item Internet",
+                            selected.internetItem,
+                          ],
+                          [
+                            "Data de abertura",
+                            new Date(selected.criadoEm).toLocaleString(),
+                          ],
                           ["Visita técnica", selected.visita || "—"],
-                        ].filter(Boolean).map((item, i) => (
-                          <div key={i} className="grid grid-cols-[140px,1fr] gap-4 py-2 border-b last:border-0">
-                            <span className="text-muted-foreground font-medium">
-                              {item![0]}:
-                            </span>
-                            <span className="break-words">{item![1]}</span>
-                          </div>
-                        ))}
+                        ]
+                          .filter(Boolean)
+                          .map((item, i) => (
+                            <div
+                              key={i}
+                              className="grid grid-cols-[140px,1fr] gap-4 py-2 border-b last:border-0"
+                            >
+                              <span className="text-muted-foreground font-medium">
+                                {item![0]}:
+                              </span>
+                              <span className="break-words">{item![1]}</span>
+                            </div>
+                          ))}
                       </div>
                     </div>
 
@@ -931,7 +958,9 @@ export default function ChamadosPage() {
 
                 {tab === "historico" && (
                   <div className="pt-4">
-                    <h3 className="font-semibold text-lg mb-4">Linha do tempo</h3>
+                    <h3 className="font-semibold text-lg mb-4">
+                      Linha do tempo
+                    </h3>
                     <div className="relative border-l-2 border-border pl-6 space-y-6">
                       {history.map((ev, idx) => (
                         <div key={idx} className="relative">
@@ -978,7 +1007,9 @@ export default function ChamadosPage() {
                 {tab === "ticket" && (
                   <div className="pt-4 space-y-4">
                     <div className="grid gap-2">
-                      <label className="text-sm font-medium">Modelo de Mensagem</label>
+                      <label className="text-sm font-medium">
+                        Modelo de Mensagem
+                      </label>
                       <Select
                         value={template}
                         onValueChange={(v) =>
