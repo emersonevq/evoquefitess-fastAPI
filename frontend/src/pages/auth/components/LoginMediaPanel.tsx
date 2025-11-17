@@ -137,8 +137,6 @@ export default function LoginMediaPanel() {
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error("Image load error:", item.id);
-                    // Fallback to placeholder if image fails
-                    e.currentTarget.src = defaultItems[0].url || "";
                   }}
                 />
               ) : (
