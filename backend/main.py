@@ -86,24 +86,20 @@ def download_login_media(item_id: int, db: Session = Depends(get_db)):
         filename = m.titulo or "media"
         data = m.arquivo_blob
 
+        if data is None:
+            raise HTTPException(status_code=404, detail="Arquivo vazio")
+
         if not isinstance(data, bytes):
             data = bytes(data)
 
-        def generate_chunks(blob_data):
-            chunk_size = 262144
-            try:
-                for i in range(0, len(blob_data), chunk_size):
-                    yield blob_data[i:i + chunk_size]
-            except Exception as chunk_err:
-                print(f"Erro ao gerar chunk: {chunk_err}")
-                raise
+        media_type = m.mime_type or "application/octet-stream"
 
-        return StreamingResponse(
-            generate_chunks(data),
-            media_type=m.mime_type or "application/octet-stream",
+        return Response(
+            content=data,
+            media_type=media_type,
             headers={
                 "Content-Disposition": f"inline; filename={filename}",
-                "Accept-Ranges": "bytes",
+                "Content-Length": str(len(data)),
                 "Cache-Control": "public, max-age=3600"
             }
         )
