@@ -43,16 +43,16 @@ def login_media(db: Session = Depends(get_db)):
             Media.__table__.create(bind=engine, checkfirst=True)
         except Exception:
             pass
-        q = db.query(Media).filter(Media.ativo == True).order_by(Media.id.desc()).all()
+        q = db.query(Media).filter(Media.status == "ativo").order_by(Media.id.desc()).all()
         out = []
         for m in q:
             out.append(
                 {
                     "id": m.id,
-                    "type": m.media_type,
+                    "type": m.tipo if m.tipo != "foto" else "image" if m.tipo == "foto" else "video",
                     "url": f"/api/login-media/{m.id}/download",
-                    "title": m.title,
-                    "description": m.description,
+                    "title": m.titulo,
+                    "description": m.descricao,
                     "mime": m.mime_type,
                 }
             )
