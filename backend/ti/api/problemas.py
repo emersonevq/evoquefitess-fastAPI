@@ -18,33 +18,71 @@ def listar_problemas(db: Session = Depends(get_db)):
 
         result = []
 
-        # 1) Try legacy table "problema_reportado" with various column name combinations
+        # 1) Try legacy table "problema_reportado" - PRIORIDADE: Tabela principal com a estrutura correcta
+        # Estrutura confirmada: id, nome (unique), prioridade_padrao, requer_item_internet, ativo, session_revoked_at
         legacy_queries = [
-            # prioridade_padrao and requer_item_internet columns
-            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problema_reportado WHERE ativo = 1",
-            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problema_reportado WHERE ativo = 1 OR ativo IS NULL",
+            # Sem filtro de ativo (inclui tudo)
+            "SELECT id, nome, COALESCE(prioridade_padrao, 'Normal') as prioridade, COALESCE(requer_item_internet, 0) as requer_internet FROM problema_reportado ORDER BY nome",
+            # Com filtro de ativo (somente ativos)
+            "SELECT id, nome, COALESCE(prioridade_padrao, 'Normal') as prioridade, COALESCE(requer_item_internet, 0) as requer_internet FROM problema_reportado WHERE ativo = 1 ORDER BY nome",
+            # Sem order by, sem filtro
             "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problema_reportado",
-            # prioridade and requer_internet columns
-            "SELECT id, nome, prioridade, requer_internet FROM problema_reportado WHERE ativo = 1",
-            "SELECT id, nome, prioridade, requer_internet FROM problema_reportado WHERE ativo = 1 OR ativo IS NULL",
-            "SELECT id, nome, prioridade, requer_internet FROM problema_reportado",
-            # Try with DEFAULT priority if those columns don't exist
-            "SELECT id, nome, 'Normal' as prioridade, 0 as requer_internet FROM problema_reportado WHERE ativo = 1",
-            "SELECT id, nome, 'Normal' as prioridade, 0 as requer_internet FROM problema_reportado",
-            # problemas_reportados table (plural)
-            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problemas_reportados WHERE ativo = 1",
-            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problemas_reportados WHERE ativo = 1 OR ativo IS NULL",
-            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problemas_reportados",
-            "SELECT id, nome, prioridade, requer_internet FROM problemas_reportados WHERE ativo = 1",
-            "SELECT id, nome, prioridade, requer_internet FROM problemas_reportados WHERE ativo = 1 OR ativo IS NULL",
-            "SELECT id, nome, prioridade, requer_internet FROM problemas_reportados",
+            # Sem order by, com filtro
+            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problema_reportado WHERE ativo = 1 OR ativo IS NULL",
         ]
 
         for sql in legacy_queries:
             try:
                 res = db.execute(text(sql))
                 fetched = res.fetchall()
+                if fetched and len(fetched) > 0:
+                    print(f"✅ Problema-reportado query succeeded: {sql[:80]}")
+                    return [
+                        {
+                            "id": int(r[0]) if r[0] is not None else 0,
+                            "nome": str(r[1]).strip() if r[1] else "Sem nome",
+                            "prioridade": str(r[2] or "Normal").strip(),
+                            "requer_internet": bool(r[3]) if len(r) > 3 else False,
+                        }
+                        for r in fetched
+                    ]
+            except Exception as e:
+                print(f"⚠️  Query failed: {sql[:80]} - Error: {e}")
+                continue
+
+        print("⚠️  No results from problema_reportado, trying other tables...")
+
+        # 2) Try ORM standard "problema" table
+        try:
+            rows = db.query(Problema).order_by(Problema.nome.asc()).all()
+            if rows:
+                print(f"✅ Found {len(rows)} problems in ORM Problema table")
+                return [
+                    {
+                        "id": r.id,
+                        "nome": r.nome,
+                        "prioridade": r.prioridade,
+                        "requer_internet": bool(r.requer_internet),
+                    }
+                    for r in rows
+                ]
+        except Exception as e:
+            print(f"⚠️  ORM query failed: {e}")
+            pass
+
+        # 3) Try "problemas" table (plural) with various column combinations
+        fallback_queries = [
+            "SELECT id, nome, prioridade, requer_internet FROM problemas",
+            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problemas",
+            "SELECT id, problema AS nome, prioridade, requer_internet FROM problemas",
+        ]
+
+        for sql in fallback_queries:
+            try:
+                res = db.execute(text(sql))
+                fetched = res.fetchall()
                 if fetched:
+                    print(f"✅ Found problems in alternate table: {sql[:80]}")
                     return [
                         {
                             "id": int(r[0]) if r[0] is not None else 0,
@@ -55,74 +93,33 @@ def listar_problemas(db: Session = Depends(get_db)):
                         for r in fetched
                     ]
             except Exception as e:
+                print(f"⚠️  Fallback query failed: {e}")
                 continue
 
-        # 2) Try ORM standard "problema" table
-        try:
-            rows = db.query(Problema).order_by(Problema.nome.asc()).all()
-            if rows:
-                return [
-                    {
-                        "id": r.id,
-                        "nome": r.nome,
-                        "prioridade": r.prioridade,
-                        "requer_internet": bool(r.requer_internet),
-                    }
-                    for r in rows
-                ]
-        except Exception:
-            pass
-
-        # 3) Try "problemas" table (plural) with various column combinations
-        fallback_queries = [
-            "SELECT id, nome, prioridade, requer_internet FROM problemas",
-            "SELECT id, nome, prioridade_padrao, requer_item_internet FROM problemas",
-            "SELECT id, problema AS nome, prioridade, requer_internet FROM problemas",
-            "SELECT id, problema AS nome, prioridade_padrao, requer_item_internet FROM problemas",
-            "SELECT id, nome, 'Normal' as prioridade, 0 as requer_internet FROM problemas",
-            "SELECT id, problema AS nome, 'Normal' as prioridade, 0 as requer_internet FROM problemas",
-        ]
-
-        for sql in fallback_queries:
-            try:
-                res = db.execute(text(sql))
-                fetched = res.fetchall()
-                if fetched:
-                    return [
-                        {
-                            "id": int(r[0]) if r[0] is not None else 0,
-                            "nome": str(r[1]),
-                            "prioridade": str(r[2] or "Normal"),
-                            "requer_internet": bool(r[3]) if len(r) > 3 else False,
-                        }
-                        for r in fetched
-                    ]
-            except Exception:
-                continue
-
-        # 4) Fallback: extract problems from existing chamados (tickets)
+        # 4) Last resort: extract problems from existing chamados
         try:
             existing_names = {r[0] for r in db.query(Chamado.problema).distinct().all() if r[0]}
-            names_in_table = {r["nome"].lower() for r in result}
-            for nome in sorted(n for n in (x.lower() for x in existing_names) if n not in names_in_table):
-                result.append(
+            if existing_names:
+                print(f"✅ Extracting {len(existing_names)} problems from existing chamados")
+                return [
                     {
-                        "id": 0,
+                        "id": idx,
                         "nome": nome,
                         "prioridade": "Normal",
                         "requer_internet": nome.lower() == "internet",
                     }
-                )
-            if result:
-                return result
-        except Exception:
+                    for idx, nome in enumerate(sorted(existing_names), 1)
+                ]
+        except Exception as e:
+            print(f"⚠️  Could not extract from chamados: {e}")
             pass
 
         # If all else fails, return empty list
+        print("❌ No problems found anywhere")
         return []
 
     except Exception as e:
-        print(f"Error in listar_problemas: {e}")
+        print(f"❌ Error in listar_problemas: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao listar problemas: {e}")
