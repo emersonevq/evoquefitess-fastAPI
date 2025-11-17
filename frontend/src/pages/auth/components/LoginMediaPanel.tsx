@@ -82,17 +82,17 @@ export default function LoginMediaPanel() {
 
   if (showFallback) {
     return (
-      <div className="relative overflow-hidden rounded-2xl mx-auto w-[360px] h-[360px] sm:w-[460px] sm:h-[460px] md:w-[520px] md:h-[520px] lg:w-[560px] lg:h-[560px] xl:w-[640px] xl:h-[640px] brand-gradient flex items-center justify-center">
+      <div className="relative overflow-hidden w-full h-full brand-gradient flex items-center justify-center">
         <div className="max-w-lg text-center text-primary-foreground px-6">
           <img
             src="https://images.totalpass.com/public/1280x720/czM6Ly90cC1pbWFnZS1hZG1pbi1wcm9kL2d5bXMva2g2OHF6OWNuajloN2lkdnhzcHhhdWx4emFhbWEzYnc3MGx5cDRzZ3p5aTlpZGM0OHRvYnk0YW56azRk"
             alt="Evoque Fitness Logo"
-            className="h-10 w-auto mx-auto mb-6 rounded-sm shadow-sm"
+            className="h-12 w-auto mx-auto mb-6 rounded-sm shadow-sm"
           />
-          <h1 className="text-3xl font-extrabold drop-shadow">
+          <h1 className="text-4xl font-extrabold drop-shadow">
             Evoque Fitness
           </h1>
-          <p className="mt-3 text-sm/6 opacity-90">
+          <p className="mt-4 text-sm/6 opacity-90">
             Acesse seu painel para gerenciar chamados e acompanhar métricas do
             setor.
           </p>
@@ -102,7 +102,7 @@ export default function LoginMediaPanel() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl mx-auto w-[360px] h-[360px] sm:w-[460px] sm:h-[460px] md:w-[520px] md:h-[520px] lg:w-[560px] lg:h-[560px] xl:w-[640px] xl:h-[640px]">
+    <div className="relative overflow-hidden w-full h-full">
       <div
         className="absolute inset-0 brand-gradient opacity-70"
         aria-hidden="true"
