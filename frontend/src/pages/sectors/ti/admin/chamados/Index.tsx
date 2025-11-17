@@ -1,29 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
-type TicketStatus =
-  | "ABERTO"
-  | "EM_ANDAMENTO"
-  | "EM_ANALISE"
-  | "CONCLUIDO"
-  | "CANCELADO";
-
-interface UiTicket {
-  id: string; // database id
-  codigo: string; // EVQ-0001
-  protocolo: string;
-  titulo: string;
-  solicitante: string;
-  unidade: string;
-  categoria: string;
-  status: TicketStatus;
-  criadoEm: string;
-  cargo: string;
-  email: string;
-  telefone: string;
-  internetItem?: string | null;
-  visita?: string | null;
-  gerente?: string | null;
-  descricao?: string | null;
-}
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { NavLink, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,11 +14,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Save, Trash2, Ticket as TicketIcon, UserPlus } from "lucide-react";
+import { Save, Trash2, Ticket as TicketIcon, UserPlus, Paperclip, Image as ImageIcon } from "lucide-react";
 import { ticketsMock } from "../mock";
 import { apiFetch, API_BASE } from "@/lib/api";
 import { useAuthContext } from "@/lib/auth-context";
 import { toast } from "@/hooks/use-toast";
+
+type TicketStatus =
+  | "ABERTO"
+  | "EM_ANDAMENTO"
+  | "EM_ANALISE"
+  | "CONCLUIDO"
+  | "CANCELADO";
+
+interface UiTicket {
+  id: string;
+  codigo: string;
+  protocolo: string;
+  titulo: string;
+  solicitante: string;
+  unidade: string;
+  categoria: string;
+  status: TicketStatus;
+  criadoEm: string;
+  cargo: string;
+  email: string;
+  telefone: string;
+  internetItem?: string | null;
+  visita?: string | null;
+  gerente?: string | null;
+  descricao?: string | null;
+}
 
 const statusMap = [
   { key: "todos", label: "Todos" },
@@ -94,7 +95,7 @@ function StatusPill({ status }: { status: TicketStatus }) {
             : "Cancelado";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${styles}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles}`}
     >
       {label}
     </span>
@@ -128,45 +129,37 @@ function TicketCard({
 }) {
   const [sel, setSel] = useState<TicketStatus>(status);
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-border/60 bg-muted/30 flex items-center justify-between">
-        <div className="font-semibold text-orange-400">{codigo}</div>
+    <div className="rounded-lg border border-border/60 bg-card overflow-hidden hover:shadow-md transition-all">
+      <div className="px-3 py-2 border-b border-border/60 bg-muted/30 flex items-center justify-between">
+        <div className="font-semibold text-sm text-primary">{codigo}</div>
         <StatusPill status={status} />
       </div>
 
-      <div className="p-4 flex flex-col gap-3">
-        <div className="font-medium text-base">{titulo}</div>
+      <div className="p-3 space-y-2.5">
+        <div className="font-medium text-sm line-clamp-2">{titulo}</div>
 
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
           <div className="text-muted-foreground">Solicitante:</div>
-          <div className="text-right">{solicitante}</div>
+          <div className="text-right truncate">{solicitante}</div>
 
           <div className="text-muted-foreground">Problema:</div>
-          <div className="text-right">{categoria}</div>
+          <div className="text-right truncate">{categoria}</div>
 
           <div className="text-muted-foreground">Unidade:</div>
-          <div className="text-right">{unidade}</div>
+          <div className="text-right truncate">{unidade}</div>
 
           <div className="text-muted-foreground">Data:</div>
           <div className="text-right">
             {new Date(criadoEm).toLocaleDateString()}
           </div>
-
-          <div className="text-muted-foreground">Agente:</div>
-          <div className="text-right">
-            <Button
-              size="sm"
-              variant="success"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <UserPlus className="size-4" /> Atribuir
-            </Button>
-          </div>
         </div>
 
-        <div className="mt-1 rounded-md border border-border/60 bg-background p-2">
+        <div className="pt-2 border-t border-border/40">
           <Select value={sel} onValueChange={(v) => setSel(v as TicketStatus)}>
-            <SelectTrigger onClick={(e) => e.stopPropagation()}>
+            <SelectTrigger 
+              onClick={(e) => e.stopPropagation()}
+              className="h-8 text-xs"
+            >
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -179,33 +172,39 @@ function TicketCard({
           </Select>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+        <div className="grid grid-cols-3 gap-1.5">
           <Button
+            size="sm"
             variant="warning"
             onClick={(e) => {
               e.stopPropagation();
               onUpdate(id, sel);
             }}
+            className="h-8 text-xs px-2"
           >
-            <Save className="size-4" /> Atualizar
+            <Save className="size-3" />
           </Button>
           <Button
+            size="sm"
             variant="destructive"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(id);
             }}
+            className="h-8 text-xs px-2"
           >
-            <Trash2 className="size-4" /> Excluir
+            <Trash2 className="size-3" />
           </Button>
           <Button
+            size="sm"
             variant="info"
             onClick={(e) => {
               e.stopPropagation();
               onTicket();
             }}
+            className="h-8 text-xs px-2"
           >
-            <TicketIcon className="size-4" /> Ticket
+            <TicketIcon className="size-3" />
           </Button>
         </div>
       </div>
@@ -215,12 +214,17 @@ function TicketCard({
 
 export default function ChamadosPage() {
   const { filtro } = useParams<{ filtro?: string }>();
-
   const [items, setItems] = useState<UiTicket[]>([]);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [confirmPwd, setConfirmPwd] = useState("");
   const [confirmLoading, setConfirmLoading] = useState(false);
   const { user } = useAuthContext();
+
+  // Infinite scroll state
+  const [visibleTickets, setVisibleTickets] = useState(6);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const ticketsContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreTicketsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function toUiStatus(s: string): TicketStatus {
@@ -291,7 +295,7 @@ export default function ChamadosPage() {
       )
       .catch(() => setItems(ticketsMock.map(adaptMock)));
 
-    // Socket.IO - realtime updates
+    // Socket.IO
     import("socket.io-client").then(({ io }) => {
       const base = API_BASE;
       const origin = base.replace(/\/?api$/, "");
@@ -377,6 +381,35 @@ export default function ChamadosPage() {
     }
   }, [filtro, items]);
 
+  // Infinite scroll para tickets
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && visibleTickets < list.length) {
+          setIsLoadingMore(true);
+          // Simula delay de carregamento para UX
+          setTimeout(() => {
+            setVisibleTickets((prev) => Math.min(prev + 6, list.length));
+            setIsLoadingMore(false);
+          }, 500);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreTicketsRef.current) {
+      observer.observe(loadMoreTicketsRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [visibleTickets, list.length]);
+
+  // Reset visible count when filter changes
+  useEffect(() => {
+    setVisibleTickets(6);
+    setIsLoadingMore(false);
+  }, [filtro]);
+
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<UiTicket | null>(null);
   const [tab, setTab] = useState<"resumo" | "historico" | "ticket">("resumo");
@@ -394,46 +427,8 @@ export default function ChamadosPage() {
   const [priority, setPriority] = useState(false);
   const [ccMe, setCcMe] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const [visibleCount, setVisibleCount] = useState(6);
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  function updateHistory(
-    arr: {
-      t: number;
-      label: string;
-      attachments?: string[];
-      files?: { name: string; url: string; mime?: string }[];
-    }[],
-  ) {
-    setHistory(arr);
-    // Preserve current visible count (avoid resetting to 6) and clamp to range
-    setVisibleCount((c) => Math.min(Math.max(c, 6), arr.length));
-  }
-  function handleHistoryScroll(e: any) {
-    const el = e.currentTarget as HTMLElement;
-    if (!el) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 16) {
-      setVisibleCount((c) => Math.min(c + 6, history.length));
-    }
-  }
 
-  useEffect(() => {
-    const root = listRef.current;
-    const sentinel = loadMoreRef.current;
-    if (!root || !sentinel) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((en) => en.isIntersecting)) {
-          setVisibleCount((c) => Math.min(c + 6, history.length));
-        }
-      },
-      { root, rootMargin: "0px 0px 200px 0px", threshold: 0.1 },
-    );
-    obs.observe(sentinel);
-    return () => obs.disconnect();
-  }, [history.length, tab, open]);
-
-  function initFromSelected(s: UiTicket) {
+  const initFromSelected = useCallback((s: UiTicket) => {
     setTab("resumo");
     setSubject(`Atualização do Chamado ${s.id}`);
     setMessage("");
@@ -472,20 +467,20 @@ export default function ChamadosPage() {
                 }))
               : undefined,
           }));
-          updateHistory(arr);
+          setHistory(arr);
         },
       )
       .catch(() => {
         const base = new Date(s.criadoEm).getTime();
-        updateHistory([{ t: base, label: "Chamado aberto" }]);
+        setHistory([{ t: base, label: "Chamado aberto" }]);
       });
-  }
+  }, []);
 
   async function handleSendTicket() {
     if (!selected) return;
     try {
       const fd = new FormData();
-      fd.set("assunto", subject || "Atualiza��ão do chamado");
+      fd.set("assunto", subject || "Atualização do chamado");
       fd.set("mensagem", message || "");
       const destinatarios =
         ccMe && user?.email
@@ -516,29 +511,28 @@ export default function ChamadosPage() {
             }))
           : undefined,
       }));
-      updateHistory(arr);
+      setHistory(arr);
       setTab("historico");
       setFiles([]);
       setSubject("");
       setMessage("");
+      toast({
+        title: "Ticket enviado",
+        description: "O ticket foi enviado com sucesso",
+      });
     } catch (e) {
-      // noop: mostrar toast se desejar
+      toast({
+        title: "Erro",
+        description: "Falha ao enviar ticket",
+        variant: "destructive",
+      });
     }
   }
 
-  useEffect(() => {
-    if (open) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [open]);
-
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-shrink-0">
         <SummaryCard
           title="Todos"
           value={counts.todos}
@@ -566,13 +560,14 @@ export default function ChamadosPage() {
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 flex-shrink-0">
         {statusMap.map((s) => (
           <NavLink
             key={s.key}
             to={`/setor/ti/admin/chamados/${s.key}`}
             className={({ isActive }) =>
-              `rounded-full px-3 py-1.5 text-sm border ${isActive ? "bg-primary text-primary-foreground border-transparent" : "bg-secondary hover:bg-secondary/80"}`
+              `rounded-full px-3 py-1.5 text-sm border transition-colors ${isActive ? "bg-primary text-primary-foreground border-transparent" : "bg-secondary hover:bg-secondary/80"}`
             }
           >
             {s.label}
@@ -580,91 +575,128 @@ export default function ChamadosPage() {
         ))}
       </div>
 
-      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {list.map((t) => (
-          <div
-            key={t.id}
-            onClick={() => {
-              setSelected(t);
-              initFromSelected(t);
-              setOpen(true);
-            }}
-            className="cursor-pointer transition-shadow hover:shadow-md"
-          >
-            <TicketCard
-              {...t}
-              onTicket={() => {
-                setSelected(t);
-                initFromSelected(t);
-                setTab("ticket");
-                setOpen(true);
-              }}
-              onUpdate={async (id, sel) => {
-                const statusText =
-                  sel === "ABERTO"
-                    ? "Aberto"
-                    : sel === "EM_ANDAMENTO"
-                      ? "Em andamento"
-                      : sel === "EM_ANALISE"
-                        ? "Em análise"
-                        : sel === "CONCLUIDO"
-                          ? "Concluído"
-                          : "Cancelado";
-                try {
-                  const r = await apiFetch(`/chamados/${id}/status`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ status: statusText }),
-                  });
-                  if (!r.ok) throw new Error(await r.text());
-                  setItems((prev) =>
-                    prev.map((it) =>
-                      it.id === id ? { ...it, status: sel } : it,
-                    ),
-                  );
-                  // Refresh history if this ticket is selected and modal open
-                  if (selected && selected.id === id) {
-                    const hist = await apiFetch(
-                      `/chamados/${id}/historico`,
-                    ).then((x) => x.json());
-                    const arr = hist.items.map((it: any) => ({
-                      t: new Date(it.t).getTime(),
-                      label: it.label,
-                      attachments: it.anexos
-                        ? it.anexos.map((a: any) => a.nome_original)
-                        : undefined,
-                      files: it.anexos
-                        ? it.anexos.map((a: any) => ({
-                            name: a.nome_original,
-                            url: `${API_BASE.replace(/\/api$/, "")}/${a.caminho_arquivo}`,
-                            mime: a.mime_type || undefined,
-                          }))
-                        : undefined,
-                    }));
-                    updateHistory(arr);
-                    setTab("historico");
-                  }
-                } catch (e) {
-                  // noop: in real app show toast
-                }
-              }}
-              onDelete={(id) => setConfirmId(id)}
-            />
+      {/* Tickets Grid com Scroll Infinito */}
+      <div className="flex-1 overflow-hidden">
+        <div
+          ref={ticketsContainerRef}
+          className="h-full overflow-y-auto pr-2 -mr-2"
+        >
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 pb-4">
+            {list.slice(0, visibleTickets).map((t) => (
+              <div
+                key={t.id}
+                onClick={() => {
+                  setSelected(t);
+                  initFromSelected(t);
+                  setOpen(true);
+                }}
+                className="cursor-pointer transition-all hover:scale-105"
+              >
+                <TicketCard
+                  {...t}
+                  onTicket={() => {
+                    setSelected(t);
+                    initFromSelected(t);
+                    setTab("ticket");
+                    setOpen(true);
+                  }}
+                  onUpdate={async (id, sel) => {
+                    const statusText =
+                      sel === "ABERTO"
+                        ? "Aberto"
+                        : sel === "EM_ANDAMENTO"
+                          ? "Em andamento"
+                          : sel === "EM_ANALISE"
+                            ? "Em análise"
+                            : sel === "CONCLUIDO"
+                              ? "Concluído"
+                              : "Cancelado";
+                    try {
+                      const r = await apiFetch(`/chamados/${id}/status`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ status: statusText }),
+                      });
+                      if (!r.ok) throw new Error(await r.text());
+                      setItems((prev) =>
+                        prev.map((it) =>
+                          it.id === id ? { ...it, status: sel } : it,
+                        ),
+                      );
+                      if (selected && selected.id === id) {
+                        const hist = await apiFetch(
+                          `/chamados/${id}/historico`,
+                        ).then((x) => x.json());
+                        const arr = hist.items.map((it: any) => ({
+                          t: new Date(it.t).getTime(),
+                          label: it.label,
+                          attachments: it.anexos
+                            ? it.anexos.map((a: any) => a.nome_original)
+                            : undefined,
+                          files: it.anexos
+                            ? it.anexos.map((a: any) => ({
+                                name: a.nome_original,
+                                url: `${API_BASE.replace(/\/api$/, "")}/${a.caminho_arquivo}`,
+                                mime: a.mime_type || undefined,
+                              }))
+                            : undefined,
+                        }));
+                        setHistory(arr);
+                        setTab("historico");
+                      }
+                      toast({
+                        title: "Status atualizado",
+                        description: `Chamado alterado para: ${statusText}`,
+                      });
+                    } catch (e) {
+                      toast({
+                        title: "Erro",
+                        description: "Falha ao atualizar status",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  onDelete={(id) => setConfirmId(id)}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+          
+          {/* Sentinel para infinite scroll com loading */}
+          {visibleTickets < list.length && (
+            <div ref={loadMoreTicketsRef} className="py-8 flex flex-col items-center justify-center gap-3">
+              {isLoadingMore && (
+                <>
+                  <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground animate-pulse">
+                    Carregando chamados...
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+          
+          {list.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              Nenhum chamado encontrado
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Delete confirmation */}
+      {/* Delete Dialog */}
       <Dialog open={!!confirmId} onOpenChange={(o) => !o && setConfirmId(null)}>
         <DialogContent className="max-w-md">
-          <div className="space-y-3">
-            <div className="text-lg font-semibold">Excluir chamado</div>
+          <DialogHeader>
+            <DialogTitle>Excluir chamado</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Esta ação apagará definitivamente o chamado e não poderá ser
               desfeita.
             </p>
             <div className="grid gap-2">
-              <label className="text-sm">Confirme sua senha</label>
+              <label className="text-sm font-medium">Confirme sua senha</label>
               <input
                 type="password"
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -672,7 +704,7 @@ export default function ChamadosPage() {
                 onChange={(e) => setConfirmPwd(e.target.value)}
               />
             </div>
-            <div className="flex justify-end gap-2 pt-1">
+            <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setConfirmId(null)}>
                 Cancelar
               </Button>
@@ -702,13 +734,9 @@ export default function ChamadosPage() {
                       description: "Chamado excluído com sucesso",
                     });
                   } catch (e) {
-                    const errorMsg =
-                      e instanceof Error
-                        ? e.message
-                        : "Erro ao excluir chamado";
                     toast({
-                      title: "Erro na exclusão",
-                      description: errorMsg,
+                      title: "Erro",
+                      description: e instanceof Error ? e.message : "Erro ao excluir",
                       variant: "destructive",
                     });
                   } finally {
@@ -716,118 +744,86 @@ export default function ChamadosPage() {
                   }
                 }}
               >
-                Confirmar exclusão
+                {confirmLoading ? "Excluindo..." : "Confirmar exclusão"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Detalhes - Mantido igual ao anterior */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl overflow-y-hidden">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
           {selected && (
-            <div className="space-y-4">
-              {/* Hidden title for a11y */}
-              <div className="sr-only">
-                <DialogHeader>
-                  <DialogTitle>Detalhes do chamado {selected.id}</DialogTitle>
-                </DialogHeader>
-              </div>
-              <div className="rounded-lg overflow-hidden border border-border/60">
-                <div className="brand-gradient p-4 sm:p-5 flex items-start justify-between">
+            <>
+              <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+                <div className="brand-gradient rounded-lg p-4 flex items-start justify-between">
                   <div>
-                    <div className="text-sm/5 text-primary-foreground/90">
+                    <div className="text-sm text-primary-foreground/90">
                       {selected.protocolo}
                     </div>
-                    <div className="mt-1 text-xl sm:text-2xl font-extrabold text-primary-foreground drop-shadow">
+                    <DialogTitle className="mt-1 text-xl font-bold text-primary-foreground">
                       {selected.titulo}
-                    </div>
+                    </DialogTitle>
                   </div>
                   <StatusPill status={selected.status} />
                 </div>
+              </DialogHeader>
 
-                {/* Tabs */}
-                <div className="px-4 pt-3">
-                  <div className="flex gap-2">
-                    {(["resumo", "historico", "ticket"] as const).map((k) => (
-                      <button
-                        key={k}
-                        onClick={() => setTab(k)}
-                        className={`rounded-full px-3 py-1.5 text-sm ${tab === k ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/80"}`}
-                      >
-                        {k === "resumo"
-                          ? "Resumo"
-                          : k === "historico"
-                            ? "Histórico"
-                            : "Ticket"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div className="px-6 pt-4 flex gap-2 flex-shrink-0 border-b pb-4">
+                {(["resumo", "historico", "ticket"] as const).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setTab(k)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                      tab === k
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary hover:bg-secondary/80"
+                    }`}
+                  >
+                    {k === "resumo"
+                      ? "Resumo"
+                      : k === "historico"
+                        ? "Histórico"
+                        : "Ticket"}
+                  </button>
+                ))}
+              </div>
 
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
                 {tab === "resumo" && (
-                  <div className="p-4 grid gap-6 md:grid-cols-[1fr,320px]">
-                    <div className="rounded-lg border border-border/60 bg-card p-4 h-max">
-                      <div className="font-semibold mb-3">Ficha do chamado</div>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                        <div className="text-muted-foreground">Solicitante</div>
-                        <div className="text-right">{selected.solicitante}</div>
-                        <div className="text-muted-foreground">Cargo</div>
-                        <div className="text-right">{selected.cargo}</div>
-                        <div className="text-muted-foreground">Gerente</div>
-                        <div className="text-right">
-                          {selected.gerente || "—"}
-                        </div>
-                        <div className="text-muted-foreground">E-mail</div>
-                        <div className="text-right break-all">
-                          {selected.email}
-                        </div>
-                        <div className="text-muted-foreground">Telefone</div>
-                        <div className="text-right">{selected.telefone}</div>
-                        <div className="text-muted-foreground">Unidade</div>
-                        <div className="text-right">{selected.unidade}</div>
-                        <div className="text-muted-foreground">Problema</div>
-                        <div className="text-right">{selected.categoria}</div>
-                        {selected.descricao && (
-                          <>
-                            <div className="text-muted-foreground">
-                              Descrição
-                            </div>
-                            <div className="text-right whitespace-pre-line break-words">
-                              {selected.descricao}
-                            </div>
-                          </>
-                        )}
-                        {selected.internetItem && (
-                          <>
-                            <div className="text-muted-foreground">
-                              Item Internet
-                            </div>
-                            <div className="text-right">
-                              {selected.internetItem}
-                            </div>
-                          </>
-                        )}
-                        <div className="text-muted-foreground">
-                          Data de abertura
-                        </div>
-                        <div className="text-right">
-                          {new Date(selected.criadoEm).toLocaleString()}
-                        </div>
-                        <div className="text-muted-foreground">
-                          Visita técnica
-                        </div>
-                        <div className="text-right">
-                          {selected.visita || "—"}
-                        </div>
+                  <div className="grid gap-6 lg:grid-cols-[1fr,320px] pt-4">
+                    <div className="rounded-lg border bg-card p-5 space-y-4 h-fit">
+                      <h3 className="font-semibold text-lg">Ficha do chamado</h3>
+                      <div className="grid gap-3 text-sm">
+                        {[
+                          ["Solicitante", selected.solicitante],
+                          ["Cargo", selected.cargo],
+                          ["Gerente", selected.gerente || "—"],
+                          ["E-mail", selected.email],
+                          ["Telefone", selected.telefone],
+                          ["Unidade", selected.unidade],
+                          ["Problema", selected.categoria],
+                          selected.descricao && ["Descrição", selected.descricao],
+                          selected.internetItem && ["Item Internet", selected.internetItem],
+                          ["Data de abertura", new Date(selected.criadoEm).toLocaleString()],
+                          ["Visita técnica", selected.visita || "—"],
+                        ].filter(Boolean).map((item, i) => (
+                          <div key={i} className="grid grid-cols-[140px,1fr] gap-4 py-2 border-b last:border-0">
+                            <span className="text-muted-foreground font-medium">
+                              {item![0]}:
+                            </span>
+                            <span className="break-words">{item![1]}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-border/60 bg-card p-4 h-max">
-                      <div className="font-semibold mb-3">Ações</div>
-                      <div className="grid gap-3">
+                    <div className="rounded-lg border bg-card p-5 space-y-4 h-fit">
+                      <h3 className="font-semibold text-lg">Ações</h3>
+                      <div className="space-y-3">
                         <Select
-                          defaultValue={selected.status}
+                          value={selected.status}
                           onValueChange={(v) =>
                             setSelected((s) =>
                               s ? { ...s, status: v as TicketStatus } : s,
@@ -849,11 +845,12 @@ export default function ChamadosPage() {
                             <SelectItem value="CANCELADO">Cancelado</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button variant="success">
+                        <Button variant="success" className="w-full">
                           <UserPlus className="size-4" /> Atribuir
                         </Button>
                         <Button
                           variant="warning"
+                          className="w-full"
                           onClick={async () => {
                             if (!selected) return;
                             const sel = selected.status;
@@ -886,7 +883,6 @@ export default function ChamadosPage() {
                                     : it,
                                 ),
                               );
-                              // Refresh history to show status update
                               const hist = await apiFetch(
                                 `/chamados/${selected.id}/historico`,
                               ).then((x) => x.json());
@@ -904,10 +900,18 @@ export default function ChamadosPage() {
                                     }))
                                   : undefined,
                               }));
-                              updateHistory(arr);
+                              setHistory(arr);
                               setTab("historico");
+                              toast({
+                                title: "Status atualizado",
+                                description: `Alterado para: ${statusText}`,
+                              });
                             } catch (e) {
-                              // noop
+                              toast({
+                                title: "Erro",
+                                description: "Falha ao atualizar",
+                                variant: "destructive",
+                              });
                             }
                           }}
                         >
@@ -915,6 +919,7 @@ export default function ChamadosPage() {
                         </Button>
                         <Button
                           variant="destructive"
+                          className="w-full"
                           onClick={() => setConfirmId(selected?.id || null)}
                         >
                           <Trash2 className="size-4" /> Excluir
@@ -925,72 +930,55 @@ export default function ChamadosPage() {
                 )}
 
                 {tab === "historico" && (
-                  <div className="p-4">
-                    <div className="text-sm font-medium mb-3">
-                      Linha do tempo
-                    </div>
-                    <div
-                      ref={listRef}
-                      onScroll={handleHistoryScroll}
-                      className="relative border-s max-h-80 overflow-y-auto pr-2"
-                    >
-                      {history.slice(0, visibleCount).map((ev, idx) => (
-                        <div key={idx} className="relative pl-6 mb-5 last:mb-0">
-                          <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-primary ring-4 ring-primary/20" />
-                          <div className="text-sm">{ev.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(ev.t).toLocaleString()}
-                          </div>
-                          {(ev.files || ev.attachments) && (
-                            <div className="mt-1 flex flex-wrap gap-2">
-                              {ev.files &&
-                                ev.files.map((f, i) => (
+                  <div className="pt-4">
+                    <h3 className="font-semibold text-lg mb-4">Linha do tempo</h3>
+                    <div className="relative border-l-2 border-border pl-6 space-y-6">
+                      {history.map((ev, idx) => (
+                        <div key={idx} className="relative">
+                          <div className="absolute -left-[29px] top-2 h-4 w-4 rounded-full bg-primary ring-4 ring-background border-2 border-background" />
+                          <div className="space-y-2">
+                            <p className="font-medium">{ev.label}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(ev.t).toLocaleString()}
+                            </p>
+                            {ev.files && ev.files.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                {ev.files.map((f, i) => (
                                   <a
-                                    key={`f-${i}`}
+                                    key={i}
                                     href={f.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs"
+                                    className="group inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm hover:bg-accent transition-colors"
                                   >
-                                    {f.mime && f.mime.startsWith("image/") ? (
-                                      <img
-                                        src={f.url}
-                                        alt={f.name}
-                                        className="h-10 w-10 object-cover rounded"
-                                      />
+                                    {f.mime?.startsWith("image/") ? (
+                                      <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                     ) : (
-                                      <span>📎</span>
+                                      <Paperclip className="w-4 h-4 text-muted-foreground" />
                                     )}
-                                    <span className="truncate max-w-[160px]">
+                                    <span className="truncate max-w-[200px] group-hover:text-primary">
                                       {f.name}
                                     </span>
                                   </a>
                                 ))}
-                              {!ev.files &&
-                                ev.attachments &&
-                                ev.attachments.map((a, i) => (
-                                  <span
-                                    key={`a-${i}`}
-                                    className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs"
-                                  >
-                                    📎 {a}
-                                  </span>
-                                ))}
-                            </div>
-                          )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
-                      {visibleCount < history.length && (
-                        <div ref={loadMoreRef} className="h-4" />
+                      {history.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum histórico disponível
+                        </p>
                       )}
                     </div>
                   </div>
                 )}
 
                 {tab === "ticket" && (
-                  <div className="p-4 grid gap-4">
+                  <div className="pt-4 space-y-4">
                     <div className="grid gap-2">
-                      <label className="text-sm">Modelo de Mensagem</label>
+                      <label className="text-sm font-medium">Modelo de Mensagem</label>
                       <Select
                         value={template}
                         onValueChange={(v) =>
@@ -1012,60 +1000,68 @@ export default function ChamadosPage() {
                       </Select>
                     </div>
                     <div className="grid gap-2">
-                      <label className="text-sm">Assunto</label>
+                      <label className="text-sm font-medium">Assunto</label>
                       <input
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
+                        placeholder="Assunto do ticket"
                       />
                     </div>
                     <div className="grid gap-2">
-                      <label className="text-sm">Mensagem</label>
+                      <label className="text-sm font-medium">Mensagem</label>
                       <textarea
-                        className="min-h-[120px] w-full rounded-md border border-input bg-background p-3 text-sm"
+                        className="min-h-[160px] w-full rounded-md border border-input bg-background p-3 text-sm resize-none"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Digite sua mensagem..."
                       />
                     </div>
                     <div className="grid gap-2">
-                      <label className="text-sm">Anexos</label>
+                      <label className="text-sm font-medium">Anexos</label>
                       <input
                         type="file"
                         multiple
                         onChange={(e) =>
                           setFiles(Array.from(e.target.files || []))
                         }
+                        className="text-sm"
                       />
+                      {files.length > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          {files.length} arquivo(s) selecionado(s)
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-6">
-                      <label className="inline-flex items-center gap-2 text-sm">
+                    <div className="flex flex-wrap gap-4">
+                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                         <input
                           type="checkbox"
                           checked={priority}
                           onChange={(e) => setPriority(e.target.checked)}
-                          className="h-4 w-4 rounded border-border"
+                          className="h-4 w-4 rounded border-input accent-primary"
                         />
                         Marcar como prioritário
                       </label>
-                      <label className="inline-flex items-center gap-2 text-sm">
+                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
                         <input
                           type="checkbox"
                           checked={ccMe}
                           onChange={(e) => setCcMe(e.target.checked)}
-                          className="h-4 w-4 rounded border-border"
+                          className="h-4 w-4 rounded border-input accent-primary"
                         />
                         Enviar cópia para mim
                       </label>
                     </div>
-                    <div className="flex justify-end">
-                      <Button onClick={handleSendTicket}>
+                    <div className="flex justify-end pt-4">
+                      <Button onClick={handleSendTicket} size="lg">
                         <TicketIcon className="size-4" /> Enviar Ticket
                       </Button>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
