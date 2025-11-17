@@ -143,7 +143,7 @@ function Slide({ item }: { item: MediaItem }) {
           controls={false}
           preload="metadata"
         >
-          <source src={item.url} type="video/mp4" />
+          <source src={item.url} type={item.mime || "video/mp4"} />
         </video>
       ) : (
         <div className="w-full h-full flex items-center justify-center p-8">
