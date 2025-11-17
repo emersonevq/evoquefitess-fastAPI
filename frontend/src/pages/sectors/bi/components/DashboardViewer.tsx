@@ -1,14 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Dashboard, getPowerBIEmbedUrl } from "../data/dashboards";
+import { Dashboard } from "../data/dashboards";
 import { Loader } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
 }
 
+const TENANT_ID = "9f45f492-87a3-4214-862d-4c0d080aa136";
+
 export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const embedUrl = getPowerBIEmbedUrl(dashboard.reportId);
+  const [embedToken, setEmbedToken] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
