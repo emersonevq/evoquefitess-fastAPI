@@ -37,7 +37,9 @@ export default function LoginMediaPanel() {
   ];
 
   const [items, setItems] = useState<MediaItem[]>(defaultItems);
-  const [loadedVideos, setLoadedVideos] = useState<Set<string | number>>(new Set());
+  const [loadedVideos, setLoadedVideos] = useState<Set<string | number>>(
+    new Set(),
+  );
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "center",
@@ -76,18 +78,23 @@ export default function LoginMediaPanel() {
 
       if (item?.type === "video") {
         const slides = emblaApi.slideNodes();
-        const video = slides[idx]?.querySelector("video") as HTMLVideoElement | null;
+        const video = slides[idx]?.querySelector(
+          "video",
+        ) as HTMLVideoElement | null;
 
         if (video) {
           // Reset and play video
           video.currentTime = 0;
           const playPromise = video.play();
-          
+
           if (playPromise !== undefined) {
             playPromise.catch((error) => {
               console.error("Video play failed:", error);
               // If autoplay fails, skip to next after 6 seconds
-              timeoutRef.current = setTimeout(() => emblaApi.scrollNext(), 6000);
+              timeoutRef.current = setTimeout(
+                () => emblaApi.scrollNext(),
+                6000,
+              );
             });
           }
 
@@ -95,10 +102,10 @@ export default function LoginMediaPanel() {
             console.log("Video ended, moving to next");
             emblaApi.scrollNext();
           };
-          
+
           video.addEventListener("ended", handleEnd);
           videoListenersRef.current.set(idx, () =>
-            video.removeEventListener("ended", handleEnd)
+            video.removeEventListener("ended", handleEnd),
           );
         }
       } else {
@@ -161,7 +168,7 @@ export default function LoginMediaPanel() {
                     <source src={item.url} type={item.mime || "video/mp4"} />
                     Your browser does not support the video tag.
                   </video>
-                  
+
                   {/* Loading indicator for videos */}
                   {!loadedVideos.has(item.id) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
