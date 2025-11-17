@@ -122,7 +122,10 @@ async def upload_login_media(file: UploadFile = File(...), db: Session = Depends
             "mime": m.mime_type,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Falha ao salvar registro: {e}")
+        print(f"Falha ao salvar registro: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Falha ao salvar registro: {str(e)}")
 
 
 @_http.delete("/api/login-media/{item_id}")
