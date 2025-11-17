@@ -262,6 +262,10 @@ def criar_chamado_com_anexos(
             descricao=descricao,
         )
         ch = service_criar(db, payload)
+
+        # Sincroniza o chamado com a tabela de SLA
+        _sincronizar_sla(db, ch)
+
         if files:
             user_id = None
             if autor_email:
