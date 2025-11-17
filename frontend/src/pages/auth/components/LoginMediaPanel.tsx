@@ -121,7 +121,7 @@ export default function LoginMediaPanel() {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl mx-auto w-[360px] h-[360px] sm:w-[460px] sm:h-[460px] md:w-[520px] md:h-[520px] lg:w-[560px] lg:h-[560px] xl:w-[640px] xl:h-[640px]">
+    <div className="absolute inset-0 overflow-hidden">
       <div className="absolute inset-0 brand-gradient opacity-70" />
       <div className="relative h-full embla" ref={emblaRef}>
         <div className="embla__container flex h-full">
