@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   Cog,
   ChevronRight,
 } from "lucide-react";
+import { useSLASync } from "@/hooks/useSLASync";
 import NotificationBell from "./components/NotificationBell";
 
 const iconMap = {
