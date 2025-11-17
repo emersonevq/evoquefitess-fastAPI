@@ -10,7 +10,9 @@ export default function AuthenticationHandler({
   onAuthenticated,
   children,
 }: AuthenticationHandlerProps) {
-  const [status, setStatus] = useState<"loading" | "success" | "error" | "authenticated">("loading");
+  const [status, setStatus] = useState<
+    "loading" | "success" | "error" | "authenticated"
+  >("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -62,7 +64,8 @@ export default function AuthenticationHandler({
       } catch (error) {
         if (isMounted) {
           // Check if it's a network error (backend not running)
-          const message = error instanceof Error ? error.message : "Authentication failed";
+          const message =
+            error instanceof Error ? error.message : "Authentication failed";
 
           // If it's a network error, still proceed with embedded dashboards
           if (message.includes("fetch") || message.includes("ECONNREFUSED")) {

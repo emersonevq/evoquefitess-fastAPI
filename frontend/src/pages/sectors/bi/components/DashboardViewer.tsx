@@ -30,7 +30,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
 
         // Get embed token
         const tokenResponse = await apiFetch(
-          `/powerbi/embed-token/${dashboard.reportId}`
+          `/powerbi/embed-token/${dashboard.reportId}`,
         );
 
         if (!tokenResponse.ok) {
@@ -48,7 +48,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         const powerBiClient = new pbi.service.Service(
           pbi.factories.hpmFactory,
           pbi.factories.wpmpFactory,
-          pbi.factories.routerFactory
+          pbi.factories.routerFactory,
         );
 
         // Configure embed config
@@ -74,7 +74,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         if (embedContainerRef.current && isMounted) {
           report = powerBiClient.embed(
             embedContainerRef.current,
-            embedConfig as any
+            embedConfig as any,
           ) as pbi.Report;
           reportRef.current = report;
 
@@ -97,9 +97,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         console.error("Error embedding report:", error);
         if (isMounted) {
           setEmbedError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load dashboard"
+            error instanceof Error ? error.message : "Failed to load dashboard",
           );
           setIsLoading(false);
         }
@@ -123,8 +121,8 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         Boolean(
           (document as any).fullscreenElement ||
             (document as any).webkitFullscreenElement ||
-            (document as any).mozFullScreenElement
-        )
+            (document as any).mozFullScreenElement,
+        ),
       );
     document.addEventListener("fullscreenchange", handler);
     document.addEventListener("webkitfullscreenchange", handler);
