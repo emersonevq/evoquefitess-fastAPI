@@ -22,12 +22,9 @@ export default function AuthenticationHandler({
       try {
         const response = await apiFetch("/powerbi/token");
 
-        // Even if the token endpoint is not fully configured (missing secret),
-        // we can still proceed since Power BI embed uses autoAuth
         if (response.ok) {
           const data = await response.json();
           if (data.access_token) {
-            // Token obtained successfully
             if (isMounted) {
               setStatus("success");
               setTimeout(() => {
@@ -41,12 +38,12 @@ export default function AuthenticationHandler({
           }
         }
 
-        // If no token but response indicates client secret not configured,
-        // proceed anyway since Power BI will handle authentication
         if (response.status === 400 || response.status === 401) {
           const data = await response.json();
-          if (data.detail && data.detail.includes("client secret")) {
-            // Client secret not configured, but we can still proceed with autoAuth
+          if (
+            data.detail &&
+            (data.detail.includes("client secret") || data.detail.includes("Failed to get"))
+          ) {
             if (isMounted) {
               setStatus("success");
               setTimeout(() => {
@@ -60,14 +57,12 @@ export default function AuthenticationHandler({
           }
         }
 
-        throw new Error(`Authentication failed: ${response.status}`);
+        throw new Error(`Falha na autenticação: ${response.status}`);
       } catch (error) {
         if (isMounted) {
-          // Check if it's a network error (backend not running)
           const message =
-            error instanceof Error ? error.message : "Authentication failed";
+            error instanceof Error ? error.message : "Falha ao autenticar";
 
-          // If it's a network error, still proceed with embedded dashboards
           if (message.includes("fetch") || message.includes("ECONNREFUSED")) {
             setStatus("success");
             setTimeout(() => {
