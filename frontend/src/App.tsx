@@ -115,6 +115,7 @@ const App = () => (
             <Route path="configuracoes" element={<ConfiguracoesLayout />}>
               <Route index element={<ConfSLA />} />
               <Route path="sla" element={<ConfSLA />} />
+              <Route path="sla-sync" element={<ConfSLASync />} />
               <Route path="prioridades" element={<ConfPrioridades />} />
               <Route path="notificacoes" element={<ConfNotificacoes />} />
               <Route path="sistema" element={<ConfSistema />} />
