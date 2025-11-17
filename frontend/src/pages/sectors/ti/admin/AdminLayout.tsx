@@ -56,13 +56,6 @@ const groups = [
 ];
 
 export default function AdminLayout() {
-  const { isLoading: isSyncingData } = useSLASync();
-
-  useEffect(() => {
-    // Log para debug
-    console.log("Painel administrativo carregado - SLAs recalculados");
-  }, [isSyncingData]);
-
   return (
     <Layout>
       {/* Header */}
