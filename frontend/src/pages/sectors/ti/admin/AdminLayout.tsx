@@ -2,15 +2,15 @@ import Layout from "@/components/layout/Layout";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { 
-  Menu, 
-  LayoutDashboard, 
-  FileText, 
-  Users, 
-  Activity, 
-  Clock, 
-  Puzzle, 
-  Settings, 
+import {
+  Menu,
+  LayoutDashboard,
+  FileText,
+  Users,
+  Activity,
+  Clock,
+  Puzzle,
+  Settings,
   Cog,
   ChevronRight,
 } from "lucide-react";
@@ -20,11 +20,11 @@ const iconMap = {
   "Visão geral": LayoutDashboard,
   "Gerenciar chamados": FileText,
   "Gerenciar usuários": Users,
-  "Monitoramento": Activity,
-  "Histórico": Clock,
-  "Integrações": Puzzle,
-  "Sistema": Cog,
-  "Configurações": Settings,
+  Monitoramento: Activity,
+  Histórico: Clock,
+  Integrações: Puzzle,
+  Sistema: Cog,
+  Configurações: Settings,
 };
 
 const groups = [
@@ -60,21 +60,23 @@ export default function AdminLayout() {
       <section className="w-full border-b border-border/60">
         <div className="brand-gradient relative overflow-hidden">
           {/* Background pattern */}
-          <div 
+          <div
             className="absolute inset-0 opacity-10"
             style={{
               backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
                                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)`,
-              backgroundSize: '64px 64px'
+              backgroundSize: "64px 64px",
             }}
           />
-          
+
           <div className="container py-8 sm:py-10 relative">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-2">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  <span className="text-xs font-medium text-white">Sistema Ativo</span>
+                  <span className="text-xs font-medium text-white">
+                    Sistema Ativo
+                  </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-primary-foreground drop-shadow-lg">
                   Painel Administrativo — TI
@@ -104,7 +106,8 @@ export default function AdminLayout() {
                 </div>
                 <nav className="space-y-1">
                   {g.items.map((i) => {
-                    const Icon = iconMap[i.label as keyof typeof iconMap] || FileText;
+                    const Icon =
+                      iconMap[i.label as keyof typeof iconMap] || FileText;
                     return (
                       <NavLink
                         key={i.to}
@@ -119,8 +122,12 @@ export default function AdminLayout() {
                       >
                         {({ isActive }) => (
                           <>
-                            <Icon className={`w-4 h-4 ${isActive ? "" : "group-hover:scale-110 transition-transform"}`} />
-                            <span className="text-sm font-medium flex-1">{i.label}</span>
+                            <Icon
+                              className={`w-4 h-4 ${isActive ? "" : "group-hover:scale-110 transition-transform"}`}
+                            />
+                            <span className="text-sm font-medium flex-1">
+                              {i.label}
+                            </span>
                             {isActive && <ChevronRight className="w-4 h-4" />}
                           </>
                         )}
@@ -140,7 +147,7 @@ export default function AdminLayout() {
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="secondary" className="rounded-xl h-11 gap-2">
-                  <Menu className="size-4" /> 
+                  <Menu className="size-4" />
                   <span>Menu de navegação</span>
                 </Button>
               </SheetTrigger>
@@ -153,7 +160,9 @@ export default function AdminLayout() {
                       </h3>
                       <nav className="space-y-1">
                         {g.items.map((i) => {
-                          const Icon = iconMap[i.label as keyof typeof iconMap] || FileText;
+                          const Icon =
+                            iconMap[i.label as keyof typeof iconMap] ||
+                            FileText;
                           return (
                             <Link
                               key={i.to}
@@ -161,7 +170,9 @@ export default function AdminLayout() {
                               className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/50 transition-colors group"
                             >
                               <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                              <span className="text-sm font-medium">{i.label}</span>
+                              <span className="text-sm font-medium">
+                                {i.label}
+                              </span>
                             </Link>
                           );
                         })}

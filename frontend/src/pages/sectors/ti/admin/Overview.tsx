@@ -1,10 +1,10 @@
-import { 
-  TrendingUp, 
-  Clock, 
-  CheckCircle2, 
+import {
+  TrendingUp,
+  Clock,
+  CheckCircle2,
   AlertCircle,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
 } from "lucide-react";
 import {
   Bar,
@@ -45,14 +45,21 @@ function Metric({
 
   return (
     <div className="relative group">
-      <div className={`absolute -inset-1 bg-gradient-to-r ${colorMap[variant]} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300`} />
-      <div className={`relative metric-card rounded-2xl bg-gradient-to-br ${colorMap[variant]} text-white p-5 overflow-hidden`}>
+      <div
+        className={`absolute -inset-1 bg-gradient-to-r ${colorMap[variant]} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300`}
+      />
+      <div
+        className={`relative metric-card rounded-2xl bg-gradient-to-br ${colorMap[variant]} text-white p-5 overflow-hidden`}
+      >
         {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-          backgroundSize: '32px 32px'
-        }} />
-        
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+            backgroundSize: "32px 32px",
+          }}
+        />
+
         <div className="relative space-y-3">
           <div className="flex items-start justify-between">
             <div className="text-xs font-medium opacity-90">{label}</div>
@@ -61,11 +68,12 @@ function Metric({
           <div className="text-3xl font-extrabold leading-none">{value}</div>
           {sub && (
             <div className="flex items-center gap-1.5 text-xs opacity-90">
-              {trend && (
-                trend === "up" ? 
-                  <ArrowUpRight className="w-3.5 h-3.5" /> : 
+              {trend &&
+                (trend === "up" ? (
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                ) : (
                   <ArrowDownRight className="w-3.5 h-3.5" />
-              )}
+                ))}
               <span>{sub}</span>
             </div>
           )}
@@ -148,7 +156,9 @@ export default function Overview() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">Chamados por dia</h3>
               <div className="px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full">
-                <span className="text-xs font-medium text-primary">Última semana</span>
+                <span className="text-xs font-medium text-primary">
+                  Última semana
+                </span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={260}>
@@ -158,20 +168,17 @@ export default function Overview() {
                   stroke="hsl(var(--border))"
                   opacity={0.3}
                 />
-                <XAxis 
-                  dataKey="day" 
+                <XAxis
+                  dataKey="day"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <Tooltip 
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
                   }}
                 />
                 <Line
@@ -179,7 +186,7 @@ export default function Overview() {
                   dataKey="abertos"
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                  dot={{ fill: "hsl(var(--primary))", r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -193,7 +200,9 @@ export default function Overview() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">Chamados por semana</h3>
               <div className="px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full">
-                <span className="text-xs font-medium text-primary">Último mês</span>
+                <span className="text-xs font-medium text-primary">
+                  Último mês
+                </span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={260}>
@@ -203,25 +212,22 @@ export default function Overview() {
                   stroke="hsl(var(--border))"
                   opacity={0.3}
                 />
-                <XAxis 
-                  dataKey="semana" 
+                <XAxis
+                  dataKey="semana"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <Tooltip 
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
                   }}
                 />
-                <Bar 
-                  dataKey="chamados" 
-                  fill="hsl(var(--primary))" 
+                <Bar
+                  dataKey="chamados"
+                  fill="hsl(var(--primary))"
                   radius={[8, 8, 0, 0]}
                 />
               </BarChart>
@@ -260,12 +266,15 @@ export default function Overview() {
             <div className="flex items-center justify-center gap-6 mt-4">
               {pieData.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
+                  <div
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: COLORS[index] }}
                   />
                   <span className="text-sm text-muted-foreground">
-                    {item.name}: <span className="font-semibold text-foreground">{item.value}%</span>
+                    {item.name}:{" "}
+                    <span className="font-semibold text-foreground">
+                      {item.value}%
+                    </span>
                   </span>
                 </div>
               ))}
@@ -279,12 +288,17 @@ export default function Overview() {
             <h3 className="font-semibold text-lg mb-4">Desempenho do mês</h3>
             <div className="space-y-4">
               {performanceItems.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className={`w-1.5 h-8 rounded-full ${colorStyles[item.color as keyof typeof colorStyles]}`}
                     />
-                    <span className="text-sm text-muted-foreground">{item.label}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {item.label}
+                    </span>
                   </div>
                   <span className="text-lg font-bold">{item.value}</span>
                 </div>
