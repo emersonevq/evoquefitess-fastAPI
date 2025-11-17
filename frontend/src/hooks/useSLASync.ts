@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 interface SLASyncStats {
@@ -12,24 +12,25 @@ interface SLASyncStats {
 }
 
 /**
- * Hook para recalcular SLAs quando o painel administrativo é acessado.
- * Garante que os cálculos estejam sempre atualizados.
+ * Hook para recalcular SLAs quando necessário.
+ * Não faz chamadas automáticas, apenas fornece a função de recálculo.
  */
 export function useSLASync() {
-  const { data: stats, refetch, isLoading } = useQuery({
-    queryKey: ["sla-sync"],
-    queryFn: async () => {
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending: isLoading, data: stats } = useMutation({
+    mutationFn: async () => {
       const response = await api.post("/sla/recalcular/painel");
       return response.data as SLASyncStats;
     },
-    enabled: false,
-    staleTime: 0,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sla-sync"] });
+    },
   });
 
-  // Recalcula SLAs quando o hook é montado (ao acessar painel)
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
+  const refetch = useCallback(() => {
+    mutate();
+  }, [mutate]);
 
   return {
     stats,
@@ -43,14 +44,16 @@ export function useSLASync() {
  * Deve ser executado uma única vez ou para revalidação completa.
  */
 export function useSLASyncAll() {
-  const { data: stats, mutate, isPending } = useQuery({
-    queryKey: ["sla-sync-all"],
-    queryFn: async () => {
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending, data: stats } = useMutation({
+    mutationFn: async () => {
       const response = await api.post("/sla/sync/todos-chamados");
       return response.data;
     },
-    enabled: false,
-    staleTime: 0,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sla-sync-all"] });
+    },
   });
 
   return {
