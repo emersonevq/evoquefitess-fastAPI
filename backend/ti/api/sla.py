@@ -260,3 +260,143 @@ def obter_historico_sla(chamado_id: int, db: Session = Depends(get_db)):
         return historicos
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao obter histórico de SLA: {e}")
+
+
+@router.post("/sync/todos-chamados")
+def sincronizar_todos_chamados(db: Session = Depends(get_db)):
+    """
+    Sincroniza todos os chamados existentes com a tabela de histórico de SLA.
+    Deve ser executado uma única vez ou para revalidação completa.
+    """
+    try:
+        try:
+            HistoricoSLA.__table__.create(bind=engine, checkfirst=True)
+            Chamado.__table__.create(bind=engine, checkfirst=True)
+        except Exception:
+            pass
+
+        stats = {
+            "total_chamados": 0,
+            "sincronizados": 0,
+            "atualizados": 0,
+            "erros": 0,
+        }
+
+        chamados = db.query(Chamado).all()
+        stats["total_chamados"] = len(chamados)
+
+        for chamado in chamados:
+            try:
+                # Verifica se já existe histórico para este chamado
+                existing = db.query(HistoricoSLA).filter(
+                    HistoricoSLA.chamado_id == chamado.id
+                ).first()
+
+                sla_status = SLACalculator.get_sla_status(db, chamado)
+
+                if existing:
+                    # Atualiza registro existente
+                    existing.status_novo = chamado.status
+                    existing.tempo_resolucao_horas = sla_status.get("tempo_resolucao_horas")
+                    existing.limite_sla_horas = sla_status.get("tempo_resolucao_limite_horas")
+                    existing.status_sla = sla_status.get("tempo_resolucao_status")
+                    db.add(existing)
+                    stats["atualizados"] += 1
+                else:
+                    # Cria novo registro
+                    historico = HistoricoSLA(
+                        chamado_id=chamado.id,
+                        usuario_id=None,
+                        acao="sincronizacao",
+                        status_anterior=None,
+                        status_novo=chamado.status,
+                        tempo_resolucao_horas=sla_status.get("tempo_resolucao_horas"),
+                        limite_sla_horas=sla_status.get("tempo_resolucao_limite_horas"),
+                        status_sla=sla_status.get("tempo_resolucao_status"),
+                        criado_em=chamado.data_abertura or now_brazil_naive(),
+                    )
+                    db.add(historico)
+                    stats["sincronizados"] += 1
+
+            except Exception:
+                stats["erros"] += 1
+                db.rollback()
+
+        db.commit()
+        return stats
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao sincronizar chamados: {e}")
+
+
+@router.post("/recalcular/painel")
+def recalcular_sla_painel(db: Session = Depends(get_db)):
+    """
+    Recalcula todos os SLAs quando o painel administrativo é acessado.
+    Atualiza métricas para visualização correta.
+    """
+    try:
+        try:
+            HistoricoSLA.__table__.create(bind=engine, checkfirst=True)
+            Chamado.__table__.create(bind=engine, checkfirst=True)
+        except Exception:
+            pass
+
+        stats = {
+            "total_recalculados": 0,
+            "em_dia": 0,
+            "vencidos": 0,
+            "em_andamento": 0,
+            "congelados": 0,
+            "erros": 0,
+        }
+
+        chamados = db.query(Chamado).all()
+
+        for chamado in chamados:
+            try:
+                sla_status = SLACalculator.get_sla_status(db, chamado)
+
+                # Atualiza ou cria histórico com cálculo atual
+                existing = db.query(HistoricoSLA).filter(
+                    HistoricoSLA.chamado_id == chamado.id
+                ).order_by(HistoricoSLA.criado_em.desc()).first()
+
+                if existing:
+                    existing.tempo_resolucao_horas = sla_status.get("tempo_resolucao_horas")
+                    existing.status_sla = sla_status.get("tempo_resolucao_status")
+                    db.add(existing)
+                else:
+                    historico = HistoricoSLA(
+                        chamado_id=chamado.id,
+                        usuario_id=None,
+                        acao="recalculo_painel",
+                        status_novo=chamado.status,
+                        tempo_resolucao_horas=sla_status.get("tempo_resolucao_horas"),
+                        limite_sla_horas=sla_status.get("tempo_resolucao_limite_horas"),
+                        status_sla=sla_status.get("tempo_resolucao_status"),
+                        criado_em=now_brazil_naive(),
+                    )
+                    db.add(historico)
+
+                stats["total_recalculados"] += 1
+
+                status_sla = sla_status.get("tempo_resolucao_status", "sem_configuracao")
+                if status_sla == "ok":
+                    stats["em_dia"] += 1
+                elif status_sla == "vencido":
+                    stats["vencidos"] += 1
+                elif status_sla == "em_andamento":
+                    stats["em_andamento"] += 1
+                elif status_sla == "congelado":
+                    stats["congelados"] += 1
+
+            except Exception:
+                stats["erros"] += 1
+                db.rollback()
+
+        db.commit()
+        return stats
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao recalcular SLAs: {e}")
