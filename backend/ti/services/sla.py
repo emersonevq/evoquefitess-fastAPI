@@ -180,6 +180,14 @@ class SLACalculator:
 
     @staticmethod
     def get_sla_status(db: Session, chamado: Chamado) -> dict:
+        """
+        Calcula o status de SLA de um chamado baseado no histórico de status.
+
+        Usa a tabela historico_status para determinar:
+        - Data de primeira resposta (primeiro "Em Atendimento")
+        - Data de conclusão (primeiro "Concluído")
+        - Se está congelado (muito tempo em "Aguardando")
+        """
         sla_config = SLACalculator.get_sla_config_by_priority(db, chamado.prioridade)
 
         if not sla_config:
@@ -193,46 +201,61 @@ class SLACalculator:
                 "tempo_resposta_status": "sem_configuracao",
                 "tempo_resolucao_status": "sem_configuracao",
                 "data_abertura": chamado.data_abertura,
-                "data_primeira_resposta": chamado.data_primeira_resposta,
-                "data_conclusao": chamado.data_conclusao,
+                "data_primeira_resposta": None,
+                "data_conclusao": None,
             }
 
         data_abertura = chamado.data_abertura or now_brazil_naive()
         agora = now_brazil_naive()
 
+        # ===== CÁLCULO DE RESPOSTA (SLA de Resposta) =====
         tempo_resposta_horas = 0
         tempo_resposta_status = "ok"
 
-        if chamado.data_primeira_resposta:
-            tempo_resposta_horas = SLACalculator.calculate_business_hours(data_abertura, chamado.data_primeira_resposta, db)
+        # Procura primeira resposta no histórico
+        data_primeira_resposta = SLACalculator.get_first_response_date(db, chamado.id)
+
+        if data_primeira_resposta:
+            # Já houve resposta
+            tempo_resposta_horas = SLACalculator.calculate_business_hours(data_abertura, data_primeira_resposta, db)
             if tempo_resposta_horas > sla_config.tempo_resposta_horas:
                 tempo_resposta_status = "vencido"
             else:
                 tempo_resposta_status = "ok"
-        elif chamado.status not in ["Concluído", "Cancelado"]:
+        elif chamado.status not in ["Concluído", "Concluido", "Cancelado"]:
+            # Ainda não respondeu, calcular até agora
             tempo_resposta_horas = SLACalculator.calculate_business_hours(data_abertura, agora, db)
             if tempo_resposta_horas > sla_config.tempo_resposta_horas:
                 tempo_resposta_status = "vencido"
             else:
                 tempo_resposta_status = "em_andamento"
 
+        # ===== CÁLCULO DE RESOLUÇÃO (SLA de Resolução) =====
         tempo_resolucao_horas = 0
         tempo_resolucao_status = "ok"
 
-        if chamado.status == "Em análise":
+        # Verifica se está congelado
+        if SLACalculator.is_frozen(db, chamado.id, agora):
             tempo_resolucao_status = "congelado"
-        elif chamado.data_conclusao:
-            tempo_resolucao_horas = SLACalculator.calculate_business_hours(data_abertura, chamado.data_conclusao, db)
-            if tempo_resolucao_horas > sla_config.tempo_resolucao_horas:
-                tempo_resolucao_status = "vencido"
-            else:
-                tempo_resolucao_status = "ok"
-        elif chamado.status not in ["Concluído", "Cancelado"]:
             tempo_resolucao_horas = SLACalculator.calculate_business_hours(data_abertura, agora, db)
-            if tempo_resolucao_horas > sla_config.tempo_resolucao_horas:
-                tempo_resolucao_status = "vencido"
-            else:
-                tempo_resolucao_status = "em_andamento"
+        else:
+            # Procura data de conclusão no histórico
+            data_conclusao = SLACalculator.get_completion_date(db, chamado.id)
+
+            if data_conclusao:
+                # Já foi concluído
+                tempo_resolucao_horas = SLACalculator.calculate_business_hours(data_abertura, data_conclusao, db)
+                if tempo_resolucao_horas > sla_config.tempo_resolucao_horas:
+                    tempo_resolucao_status = "vencido"
+                else:
+                    tempo_resolucao_status = "ok"
+            elif chamado.status not in ["Concluído", "Concluido", "Cancelado"]:
+                # Ainda não concluído, calcular até agora
+                tempo_resolucao_horas = SLACalculator.calculate_business_hours(data_abertura, agora, db)
+                if tempo_resolucao_horas > sla_config.tempo_resolucao_horas:
+                    tempo_resolucao_status = "vencido"
+                else:
+                    tempo_resolucao_status = "em_andamento"
 
         return {
             "chamado_id": chamado.id,
@@ -246,8 +269,8 @@ class SLACalculator:
             "tempo_resolucao_horas": tempo_resolucao_horas,
             "tempo_resolucao_status": tempo_resolucao_status,
             "data_abertura": chamado.data_abertura,
-            "data_primeira_resposta": chamado.data_primeira_resposta,
-            "data_conclusao": chamado.data_conclusao,
+            "data_primeira_resposta": data_primeira_resposta,
+            "data_conclusao": SLACalculator.get_completion_date(db, chamado.id),
         }
 
     @staticmethod
