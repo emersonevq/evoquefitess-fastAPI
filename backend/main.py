@@ -1,9 +1,10 @@
 from __future__ import annotations
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
-from fastapi.responses import StreamingResponse, Response
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request
+from fastapi.responses import StreamingResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
+from io import BytesIO
 from ti.api import chamados_router, unidades_router, problemas_router, notifications_router, alerts_router, email_debug_router
 from ti.api.usuarios import router as usuarios_router
 from core.realtime import mount_socketio
@@ -166,7 +167,7 @@ def login_media(db: Session = Depends(get_db)):
 
 
 @_http.get("/api/login-media/{item_id}/download")
-def download_login_media(item_id: int, db: Session = Depends(get_db)):
+def download_login_media(item_id: int, request: Request, db: Session = Depends(get_db)):
     print(f"\n[DL] ==== START ID:{item_id} ====")
     try:
         m = db.query(Media).filter(Media.id == int(item_id)).first()
@@ -186,6 +187,41 @@ def download_login_media(item_id: int, db: Session = Depends(get_db)):
 
         mime = m.mime_type or "application/octet-stream"
         name = (m.titulo or "media").replace(" ", "_")
+        file_size = len(blob)
+
+        # Check for Range header (HTTP 206 Partial Content)
+        range_header = request.headers.get("range")
+
+        if range_header:
+            # Parse range header (e.g., "bytes=0-1023")
+            try:
+                range_value = range_header.replace("bytes=", "")
+                if "-" in range_value:
+                    start_str, end_str = range_value.split("-")
+                    start = int(start_str) if start_str else 0
+                    end = int(end_str) if end_str else file_size - 1
+
+                    # Validate range
+                    if start < 0 or end >= file_size or start > end:
+                        raise ValueError("Invalid range")
+
+                    chunk_size = end - start + 1
+                    print(f"[DL] Range request: bytes {start}-{end}/{file_size}")
+
+                    return Response(
+                        content=blob[start:end + 1],
+                        status_code=206,
+                        media_type=mime,
+                        headers={
+                            "Content-Disposition": f"inline; filename={name}",
+                            "Content-Range": f"bytes {start}-{end}/{file_size}",
+                            "Accept-Ranges": "bytes",
+                            "Content-Length": str(chunk_size),
+                        }
+                    )
+            except (ValueError, AttributeError) as e:
+                print(f"[DL] Invalid range header: {e}")
+                # Fall through to normal response if range is invalid
 
         print(f"[DL] Returning: {len(blob)} bytes as {mime}")
         print(f"[DL] ==== END ====\n")
@@ -193,7 +229,11 @@ def download_login_media(item_id: int, db: Session = Depends(get_db)):
         return Response(
             content=blob,
             media_type=mime,
-            headers={"Content-Disposition": f"inline; filename={name}"}
+            headers={
+                "Content-Disposition": f"inline; filename={name}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(file_size),
+            }
         )
     except HTTPException:
         raise
