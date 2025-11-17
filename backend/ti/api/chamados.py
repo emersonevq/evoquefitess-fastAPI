@@ -27,6 +27,54 @@ from fastapi.responses import Response
 
 router = APIRouter(prefix="/chamados", tags=["TI - Chamados"])
 
+
+def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None = None) -> None:
+    """
+    Função auxiliar para sincronizar um chamado com a tabela de histórico de SLA.
+    Deve ser chamada sempre que um chamado é criado ou atualizado.
+    """
+    try:
+        try:
+            HistoricoSLA.__table__.create(bind=engine, checkfirst=True)
+        except Exception:
+            pass
+
+        sla_status = SLACalculator.get_sla_status(db, chamado)
+
+        # Procura por histórico existente
+        existing = db.query(HistoricoSLA).filter(
+            HistoricoSLA.chamado_id == chamado.id
+        ).order_by(HistoricoSLA.criado_em.desc()).first()
+
+        if existing:
+            # Atualiza o último histórico com novos cálculos
+            existing.status_novo = chamado.status
+            existing.status_anterior = status_anterior or existing.status_anterior
+            existing.tempo_resolucao_horas = sla_status.get("tempo_resolucao_horas")
+            existing.limite_sla_horas = sla_status.get("tempo_resolucao_limite_horas")
+            existing.status_sla = sla_status.get("tempo_resolucao_status")
+            db.add(existing)
+        else:
+            # Cria novo histórico
+            historico = HistoricoSLA(
+                chamado_id=chamado.id,
+                usuario_id=None,
+                acao="criacao" if not status_anterior else "atualizacao",
+                status_anterior=status_anterior,
+                status_novo=chamado.status,
+                tempo_resolucao_horas=sla_status.get("tempo_resolucao_horas"),
+                limite_sla_horas=sla_status.get("tempo_resolucao_limite_horas"),
+                status_sla=sla_status.get("tempo_resolucao_status"),
+                criado_em=chamado.data_abertura or now_brazil_naive(),
+            )
+            db.add(historico)
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        pass
+
+
 def _normalize_status(s: str) -> str:
     if not s:
         return "Aberto"
