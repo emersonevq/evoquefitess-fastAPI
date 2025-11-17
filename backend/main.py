@@ -154,7 +154,6 @@ async def upload_login_media(file: UploadFile = File(...), db: Session = Depends
             tipo=kind,
             titulo=titulo,
             descricao=None,
-            url=f"/api/login-media/{uuid.uuid4().hex[:8]}/download",
             arquivo_blob=data,
             mime_type=content_type,
             tamanho_bytes=len(data),
@@ -163,6 +162,10 @@ async def upload_login_media(file: UploadFile = File(...), db: Session = Depends
         db.add(m)
         db.commit()
         db.refresh(m)
+
+        m.url = f"/api/login-media/{m.id}/download"
+        db.add(m)
+        db.commit()
         media_type = "image" if kind == "foto" else "video"
         return {
             "id": m.id,
