@@ -152,9 +152,8 @@ class SLACalculator:
     @staticmethod
     def is_frozen(db: Session, chamado_id: int, agora: datetime | None = None) -> bool:
         """
-        Verifica se o chamado está congelado (em 'Aguardando' há muito tempo).
-        Um chamado é considerado congelado se o último status é 'Aguardando'
-        e não houve mudança nos últimos 24 horas comerciais.
+        Verifica se o chamado está congelado (parado em 'Aguardando' ou 'Em análise').
+        Um chamado é considerado congelado se o último status é 'Aguardando' ou 'Em análise'.
         """
         if agora is None:
             agora = now_brazil_naive()
@@ -165,13 +164,15 @@ class SLACalculator:
                 HistoricoStatus.chamado_id == chamado_id
             ).order_by(HistoricoStatus.data_acao.desc()).first()
 
-            if not ultimo_status or ultimo_status.status_novo != "Aguardando":
+            if not ultimo_status:
                 return False
 
-            # Se está em Aguardando e a última mudança foi há mais de 24h, é congelado
-            if ultimo_status.data_acao:
-                tempo_congelado = SLACalculator.calculate_business_hours(ultimo_status.data_acao, agora, db)
-                return tempo_congelado > 24.0
+            # Verifica se o último status é "Aguardando" ou "Em análise"
+            status_novo = ultimo_status.status_novo or ""
+            if status_novo not in ["Aguardando", "Em análise"]:
+                return False
+
+            return True
 
         except Exception:
             pass
