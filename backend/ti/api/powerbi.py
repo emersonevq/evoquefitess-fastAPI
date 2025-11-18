@@ -192,6 +192,9 @@ async def get_embed_token(
                 if reports_response.status_code == 200:
                     report_info = reports_response.json()
                     embed_url = report_info.get("embedUrl")
+                    # Decodificar HTML entities (&amp; → &, etc)
+                    if embed_url:
+                        embed_url = html.unescape(embed_url)
                     print(f"[POWERBI] [EMBED-TOKEN] Embed URL obtida: {embed_url}")
             except Exception as e:
                 print(f"[POWERBI] [EMBED-TOKEN] ⚠️  Aviso ao obter embed URL: {e}")
