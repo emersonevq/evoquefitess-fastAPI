@@ -179,21 +179,38 @@ async def get_embed_token(
                     detail=f"Power BI API error: {error_detail}"
                 )
 
-            # 5. Retornar token
+            # 5. Obter embed URL do report
+            # Necessário para o Power BI Client validar a URL
+            embed_url = None
+            try:
+                reports_response = await client.get(
+                    f"{POWERBI_API_URL}/groups/{POWERBI_WORKSPACE_ID}/reports/{report_id}",
+                    headers=headers,
+                )
+
+                if reports_response.status_code == 200:
+                    report_info = reports_response.json()
+                    embed_url = report_info.get("embedUrl")
+                    print(f"[POWERBI] [EMBED-TOKEN] Embed URL obtida: {embed_url}")
+            except Exception as e:
+                print(f"[POWERBI] [EMBED-TOKEN] ⚠️  Aviso ao obter embed URL: {e}")
+
+            # 6. Retornar token
             token_data = response.json()
             embed_token = token_data.get("token")
-            
+
             if not embed_token:
                 raise HTTPException(status_code=400, detail="No embed token received")
 
             print(f"[POWERBI] [EMBED-TOKEN] ✅ Token gerado com sucesso!")
             print(f"[POWERBI] [EMBED-TOKEN] ========================================\n")
-            
+
             return {
                 "token": embed_token,
                 "tokenId": token_data.get("tokenId"),
                 "expiration": token_data.get("expiration"),
                 "report_id": report_id,
+                "embedUrl": embed_url,
             }
 
     except HTTPException:
