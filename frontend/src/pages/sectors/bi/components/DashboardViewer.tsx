@@ -106,10 +106,16 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
 
         const tokenData = await tokenResponse.json();
         const embedToken = tokenData.token;
-        const embedUrl = tokenData.embedUrl;
+        let embedUrl = tokenData.embedUrl;
 
         if (!embedToken) {
           throw new Error("Nenhum token de embed recebido");
+        }
+
+        // Decodificar HTML entities na URL se necessário
+        if (embedUrl && embedUrl.includes("&amp;")) {
+          embedUrl = embedUrl.replace(/&amp;/g, "&");
+          console.log("[DashboardViewer] URL decodificada:", embedUrl);
         }
 
         if (!embedUrl) {
