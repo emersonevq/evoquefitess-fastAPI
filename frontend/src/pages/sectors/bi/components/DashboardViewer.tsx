@@ -95,7 +95,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
 
         // Get embed token
         const tokenResponse = await apiFetch(
-          `/powerbi/embed-token/${dashboard.reportId}?datasetId=${dashboard.datasetId}`,
+          `/powerbi/embed-token/${dashboard.reportId}`,
         );
 
         if (!tokenResponse.ok) {
