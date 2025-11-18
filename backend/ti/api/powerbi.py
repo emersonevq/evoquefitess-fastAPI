@@ -29,14 +29,21 @@ print(f"  TENANT_ID: {POWERBI_TENANT_ID}")
 
 async def get_service_principal_token() -> str:
     """Get access token using service principal credentials (Client Credentials Flow)"""
+    print(f"[POWERBI] ===== INICIANDO AUTENTICAÇÃO =====")
+    print(f"[POWERBI] CLIENT_ID: {POWERBI_CLIENT_ID[:20]}...")
+    print(f"[POWERBI] CLIENT_SECRET: {'✅ Configurado' if POWERBI_CLIENT_SECRET else '❌ Não configurado'}")
+    print(f"[POWERBI] TOKEN_ENDPOINT: {TOKEN_ENDPOINT}")
+
     if not POWERBI_CLIENT_SECRET:
+        print(f"[POWERBI] ❌ CLIENT_SECRET não está configurado!")
         raise HTTPException(
             status_code=400,
-            detail="Power BI client secret not configured. Please add POWERBI_CLIENT_SECRET to environment variables."
+            detail="Power BI client secret not configured"
         )
 
     try:
-        async with httpx.AsyncClient() as client:
+        print(f"[POWERBI] 🔄 Enviando requisição para Azure...")
+        async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
                 TOKEN_ENDPOINT,
                 data={
@@ -47,23 +54,32 @@ async def get_service_principal_token() -> str:
                 },
             )
 
+            print(f"[POWERBI] Status Code: {response.status_code}")
+
             if response.status_code != 200:
-                print(f"[POWERBI] Token error: {response.text}")
-                raise HTTPException(status_code=400, detail="Failed to get Power BI token")
+                error_text = response.text
+                print(f"[POWERBI] ❌ Erro da Azure: {error_text}")
+                raise HTTPException(status_code=400, detail=f"Azure error: {error_text[:100]}")
 
             token_data = response.json()
             access_token = token_data.get("access_token")
             if not access_token:
+                print(f"[POWERBI] ❌ Nenhum token na resposta!")
                 raise HTTPException(status_code=400, detail="No access token in response")
+
+            print(f"[POWERBI] ✅ Token obtido com sucesso!")
             return access_token
+
     except httpx.RequestError as e:
-        print(f"[POWERBI] Request error: {e}")
-        raise HTTPException(status_code=400, detail="Failed to connect to token service")
+        print(f"[POWERBI] ❌ Erro de rede: {e}")
+        raise HTTPException(status_code=400, detail=f"Network error: {str(e)}")
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[POWERBI] Unexpected error: {e}")
-        raise HTTPException(status_code=400, detail="Failed to authenticate with Power BI")
+        print(f"[POWERBI] ❌ Erro inesperado: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
 @router.get("/token")
