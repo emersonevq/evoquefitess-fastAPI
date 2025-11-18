@@ -9,8 +9,6 @@ interface DashboardViewerProps {
   dashboard: Dashboard;
 }
 
-const TENANT_ID = "9f45f492-87a3-4214-862d-4c0d080aa136";
-
 export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(true);
