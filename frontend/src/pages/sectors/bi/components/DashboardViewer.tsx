@@ -84,52 +84,112 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
   // Power BI load and embed
   useEffect(() => {
     let isMounted = true;
+    const abortController = new AbortController();
+    let powerBiClient: pbi.service.Service | null = null;
+
+    const cleanupPreviousEmbed = () => {
+      console.log("[PowerBI] 🧹 Limpando embed anterior...");
+
+      // Remover listeners do report anterior
+      if (reportRef.current) {
+        try {
+          reportRef.current.off("loaded");
+          reportRef.current.off("rendered");
+          reportRef.current.off("error");
+          console.log("[PowerBI] Listeners removidos");
+        } catch (e) {
+          console.warn("[PowerBI] Erro ao remover listeners:", e);
+        }
+        reportRef.current = null;
+      }
+
+      // Limpar container completamente
+      if (embedContainerRef.current) {
+        try {
+          // Remover todos os filhos
+          while (embedContainerRef.current.firstChild) {
+            embedContainerRef.current.removeChild(embedContainerRef.current.firstChild);
+          }
+          // Resetar atributos
+          embedContainerRef.current.innerHTML = "";
+          embedContainerRef.current.style.cssText = "";
+          console.log("[PowerBI] Container limpo");
+        } catch (e) {
+          console.warn("[PowerBI] Erro ao limpar container:", e);
+        }
+      }
+
+      // Resetar Power BI Service se existir
+      if (powerBiClient) {
+        try {
+          if (embedContainerRef.current) {
+            powerBiClient.reset(embedContainerRef.current);
+          }
+          console.log("[PowerBI] Power BI Service resetado");
+        } catch (e) {
+          console.warn("[PowerBI] Erro ao resetar Power BI Service:", e);
+        }
+        powerBiClient = null;
+      }
+    };
 
     const embedReport = async () => {
       try {
+        if (!isMounted) return;
+
+        console.log(`[PowerBI] 📊 Carregando dashboard: ${dashboard.title}`);
+        console.log(
+          `[PowerBI] Report ID: ${dashboard.report_id}, Dataset ID: ${dashboard.dataset_id}`,
+        );
+
         setIsLoading(true);
         setIsAuthenticating(true);
         setEmbedError(null);
 
-        // Cleanup previous report instance completely
-        if (reportRef.current) {
-          try {
-            reportRef.current.off("loaded");
-            reportRef.current.off("rendered");
-            reportRef.current.off("error");
-          } catch (e) {
-            console.warn("[PowerBI] Erro ao remover listeners:", e);
-          }
-          reportRef.current = null;
-        }
+        // Limpar embed anterior antes de começar
+        cleanupPreviousEmbed();
 
-        // Reset container to clear previous embed
-        if (embedContainerRef.current) {
-          embedContainerRef.current.innerHTML = "";
-        }
-
+        // Obter token com AbortController
         const response = await apiFetch(
           `/powerbi/embed-token/${dashboard.report_id}?datasetId=${dashboard.dataset_id}`,
+          {
+            signal: abortController.signal,
+          }
         );
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: falha ao obter token`);
+          throw new Error(
+            `HTTP ${response.status}: falha ao obter token do servidor`,
+          );
+        }
+
+        if (!isMounted) {
+          console.log("[PowerBI] Componente desmontado, abortando");
+          return;
         }
 
         const data = await response.json();
         const { token, embedUrl } = data;
 
         if (!token || !embedUrl) {
-          throw new Error("Token ou embedUrl ausente na resposta do servidor");
+          throw new Error(
+            "Token ou embedUrl ausente na resposta do servidor",
+          );
         }
 
-        console.log("[PowerBI] ✅ Token e embedUrl recebidos");
+        console.log("[PowerBI] ✅ Token recebido");
         console.log(
-          "[PowerBI] URL preview:",
-          embedUrl.substring(0, 150) + "...",
+          "[PowerBI] embedUrl:",
+          embedUrl.substring(0, 100) + "...",
         );
 
-        const powerBiClient = new pbi.service.Service(
+        if (!isMounted) {
+          console.log("[PowerBI] Componente desmontado, abortando");
+          return;
+        }
+
+        // Criar NOVA instância do Power BI Service para este dashboard
+        powerBiClient = new pbi.service.Service(
           pbi.factories.hpmFactory,
           pbi.factories.wpmpFactory,
           pbi.factories.routerFactory,
@@ -151,46 +211,68 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           },
         };
 
-        console.log("[PowerBI] Embed config:", embedConfig);
+        console.log("[PowerBI] 🔧 Configuração do embed pronta");
 
-        if (embedContainerRef.current && isMounted) {
-          // 🔥 ESSENCIAL: resetar antes de embutir
-          powerBiClient.reset(embedContainerRef.current);
-
-          const report = powerBiClient.embed(
-            embedContainerRef.current,
-            embedConfig,
-          ) as pbi.Report;
-
-          reportRef.current = report;
-
-          report.on("loaded", () => {
-            console.log("[PowerBI] Loaded ✅");
-            if (isMounted) {
-              setIsLoading(false);
-              triggerConfetti();
-            }
-          });
-
-          report.on("rendered", () => {
-            console.log("[PowerBI] Rendered 🎉");
-          });
-
-          report.on("error", (event: any) => {
-            console.error("[PowerBI] Error:", event);
-            if (isMounted) {
-              setEmbedError(
-                event?.detail?.message ||
-                  "❌ Erro desconhecido ao carregar relatório",
-              );
-              setIsLoading(false);
-            }
-          });
+        if (!embedContainerRef.current || !isMounted) {
+          console.log("[PowerBI] Container não disponível, abortando");
+          return;
         }
+
+        // Resetar container e criar novo embed
+        powerBiClient.reset(embedContainerRef.current);
+        console.log("[PowerBI] Container resetado");
+
+        const report = powerBiClient.embed(
+          embedContainerRef.current,
+          embedConfig,
+        ) as pbi.Report;
+
+        if (!isMounted) {
+          console.log("[PowerBI] Componente desmontado após embed");
+          return;
+        }
+
+        reportRef.current = report;
+
+        // Listeners com verificação isMounted
+        report.on("loaded", () => {
+          console.log("[PowerBI] ✅ Relatório carregado");
+          if (isMounted) {
+            setIsLoading(false);
+            setIsAuthenticating(false);
+            triggerConfetti();
+          }
+        });
+
+        report.on("rendered", () => {
+          console.log("[PowerBI] 🎉 Relatório renderizado");
+          if (isMounted) {
+            setIsAuthenticating(false);
+          }
+        });
+
+        report.on("error", (event: any) => {
+          console.error("[PowerBI] ❌ Erro no relatório:", event);
+          if (isMounted) {
+            setEmbedError(
+              event?.detail?.message ||
+                "❌ Erro desconhecido ao carregar relatório",
+            );
+            setIsLoading(false);
+            setIsAuthenticating(false);
+          }
+        });
       } catch (err: any) {
-        console.error("[PowerBI] Embed failed:", err);
+        if (err.name === "AbortError") {
+          console.log(
+            "[PowerBI] ⏹️ Requisição cancelada (dashboard mudou)",
+          );
+          return;
+        }
+
+        console.error("[PowerBI] ❌ Erro ao carregar:", err);
         if (isMounted) {
-          setEmbedError(err?.message || "Erro inesperado");
+          setEmbedError(err?.message || "Erro inesperado ao carregar dashboard");
           setIsLoading(false);
           setIsAuthenticating(false);
         }
@@ -200,9 +282,12 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
     embedReport();
 
     return () => {
+      console.log("[PowerBI] 🔌 Limpeza: Desmontando componente");
       isMounted = false;
+      abortController.abort();
+      cleanupPreviousEmbed();
     };
-  }, [dashboard.report_id, dashboard.dataset_id]);
+  }, [dashboard.report_id, dashboard.dataset_id, dashboard.title]);
 
   // Fullscreen sync
   useEffect(() => {
