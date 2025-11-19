@@ -22,7 +22,14 @@ export default function BiPage() {
   }, [loading, categories, selectedDashboard]);
 
   const handleSelectDashboard = (dashboard: any) => {
-    console.log("[BI] Dashboard selecionado:", dashboard.title);
+    console.log("[BI] 🔄 Trocando dashboard...");
+    console.log(
+      "[BI] Dashboard anterior:",
+      selectedDashboard?.title || "nenhum",
+    );
+    console.log("[BI] Novo dashboard:", dashboard.title);
+    console.log("[BI] Report ID:", dashboard.report_id);
+    console.log("[BI] Dataset ID:", dashboard.dataset_id);
     setSelectedDashboard(dashboard);
   };
 
