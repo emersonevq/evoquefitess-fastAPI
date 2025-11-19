@@ -243,6 +243,10 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         };
 
         console.log("[PowerBI] 🔧 Configuração do embed pronta");
+        console.log("[PowerBI] Embed Config Type:", embedConfig.type);
+        console.log("[PowerBI] Embed Config Report ID:", embedConfig.id);
+        console.log("[PowerBI] Embed Config Embed URL:", embedConfig.embedUrl);
+        console.log("[PowerBI] Embed Config Access Token:", embedConfig.accessToken ? "✅ Present" : "❌ Missing");
 
         if (!embedContainerRef.current || !isMounted) {
           console.log("[PowerBI] Container não disponível, abortando");
@@ -253,10 +257,12 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         powerBiClient.reset(embedContainerRef.current);
         console.log("[PowerBI] Container resetado");
 
+        console.log("[PowerBI] 🚀 Chamando powerBiClient.embed()...");
         const report = powerBiClient.embed(
           embedContainerRef.current,
           embedConfig,
         ) as pbi.Report;
+        console.log("[PowerBI] ✅ powerBiClient.embed() completou");
 
         if (!isMounted) {
           console.log("[PowerBI] Componente desmontado após embed");
