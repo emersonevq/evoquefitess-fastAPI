@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Dashboard } from "../data/dashboards";
+import { Dashboard } from "../hooks/useDashboards";
 import { Loader } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import * as pbi from "powerbi-client";
@@ -170,7 +170,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           });
 
           report.on("rendered", () => {
-            console.log("[PowerBI] Rendered ��");
+            console.log("[PowerBI] Rendered 🎉");
           });
 
           report.on("error", (event: any) => {
@@ -286,7 +286,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         {embedError && (
           <div className="bi-loading-overlay">
             <div className="flex flex-col items-center gap-3">
-              <div className="text-4xl">⚠️</div>
+              <div className="text-4xl">��️</div>
               <p className="text-sm text-red-600">{embedError}</p>
             </div>
           </div>
