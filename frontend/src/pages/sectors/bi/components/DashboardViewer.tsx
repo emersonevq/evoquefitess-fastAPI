@@ -389,7 +389,7 @@ export default function DashboardViewer({
       embedContainer.style.position = 'relative';
       embedContainer.style.width = '100%';
       embedContainer.style.height = '100%';
-      embedContainer.style.overflow = 'hidden';
+      embedContainer.style.overflow = 'visible';
       
       if (cleanupTimeoutRef.current) {
         clearTimeout(cleanupTimeoutRef.current);
