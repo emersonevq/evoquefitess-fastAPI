@@ -10,9 +10,9 @@ export default function AuthenticationHandler({
   onAuthenticated,
   children,
 }: AuthenticationHandlerProps) {
-  const [status, setStatus] = useState<
-    "loading" | "success" | "error" | "authenticated"
-  >("loading");
+  const [status, setStatus] = useState<"loading" | "error" | "authenticated">(
+    "loading",
+  );
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -27,13 +27,8 @@ export default function AuthenticationHandler({
           if (data.access_token) {
             console.log("✅ Token obtido com sucesso");
             if (isMounted) {
-              setStatus("success");
-              setTimeout(() => {
-                if (isMounted) {
-                  setStatus("authenticated");
-                  onAuthenticated();
-                }
-              }, 1500);
+              setStatus("authenticated");
+              onAuthenticated();
             }
             return;
           }
@@ -42,13 +37,8 @@ export default function AuthenticationHandler({
         if (response.status >= 400 && response.status < 500) {
           console.warn("⚠️ Erro de autenticação, prosseguindo com autoAuth");
           if (isMounted) {
-            setStatus("success");
-            setTimeout(() => {
-              if (isMounted) {
-                setStatus("authenticated");
-                onAuthenticated();
-              }
-            }, 1500);
+            setStatus("authenticated");
+            onAuthenticated();
           }
           return;
         }
@@ -61,13 +51,8 @@ export default function AuthenticationHandler({
 
           if (message.includes("fetch") || message.includes("ECONNREFUSED")) {
             console.warn("⚠️ Erro de rede, prosseguindo");
-            setStatus("success");
-            setTimeout(() => {
-              if (isMounted) {
-                setStatus("authenticated");
-                onAuthenticated();
-              }
-            }, 1500);
+            setStatus("authenticated");
+            onAuthenticated();
             return;
           }
 
@@ -97,15 +82,6 @@ export default function AuthenticationHandler({
             <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
             <p className="text-base text-muted-foreground animate-pulse">
               Logando...
-            </p>
-          </div>
-        )}
-
-        {status === "success" && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-4xl">🎉</div>
-            <p className="text-base text-foreground font-medium">
-              Você está logado no portal de BI!
             </p>
           </div>
         )}

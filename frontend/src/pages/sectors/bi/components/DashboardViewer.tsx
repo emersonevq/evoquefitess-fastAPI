@@ -1,37 +1,110 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import {
+  models,
+  factories,
+  service,
+  Report,
+  IReportEmbedConfiguration,
+} from "powerbi-client";
 import { Dashboard } from "../hooks/useDashboards";
-import { Loader } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import * as pbi from "powerbi-client";
 import confetti from "canvas-confetti";
 import {
-  diagnostics,
-  logDashboardTransition,
-  validateDashboardData,
-} from "../utils/dashboard-diagnostics";
+  Activity,
+  AlertCircle,
+  ChevronDown,
+  Clock,
+  Code,
+  Database,
+  Layers,
+  Loader2,
+  Lock,
+  Maximize2,
+  Minimize2,
+  Play,
+  RefreshCw,
+  Shield,
+  Sparkles,
+  Terminal,
+  X,
+  Loader,
+} from "lucide-react";
 
 interface DashboardViewerProps {
   dashboard: Dashboard;
+  onError?: (error: string) => void;
+  onSuccess?: () => void;
 }
 
-export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
+export default function DashboardViewer({
+  dashboard,
+  onError,
+  onSuccess,
+}: DashboardViewerProps) {
+  // Estados da UI
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticating, setIsAuthenticating] = useState(true);
-  const [embedError, setEmbedError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState<string>("initial");
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const [logs, setLogs] = useState<
+    { message: string; type: string; timestamp: number }[]
+  >([]);
+
+  // Referências críticas
   const containerRef = useRef<HTMLDivElement | null>(null);
   const embedContainerRef = useRef<HTMLDivElement | null>(null);
-  const reportRef = useRef<pbi.Report | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const successOverlayRef = useRef<HTMLDivElement | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const powerBiReport = useRef<Report | null>(null);
+  const powerBiService = useRef<service.Service | null>(null);
 
-  const triggerConfetti = () => {
-    if (!canvasRef.current) return;
+  // Controle de ciclo de vida
+  const embedCycleToken = useRef<string>("");
+  const lastEmbedReportId = useRef<string>("");
+  const isEmbedding = useRef<boolean>(false);
+  const embedQueue = useRef<(() => Promise<void>)[]>([]);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cache e contadores
+  const tokenCache = useRef<{
+    [key: string]: { token: string; embedUrl: string; expires: number };
+  }>({});
+  const retryCount = useRef<number>(0);
+  const MAX_RETRIES = 2;
+  const RETRY_DELAY = 1000;
+
+  // Logger melhorado
+  const logger = useCallback(
+    (
+      message: string,
+      type: "info" | "success" | "error" | "warn" | "debug" = "info",
+    ) => {
+      const ts = Date.now();
+      setLogs((prev) => {
+        const arr = [...prev, { message, type, timestamp: ts }];
+        return arr.length > 150 ? arr.slice(-150) : arr;
+      });
+
+      const prefix = `[PowerBI ${new Date().toLocaleTimeString()}]`;
+      if (type === "error") console.error(prefix, message);
+      else if (type === "warn") console.warn(prefix, message);
+      else console.log(prefix, message);
+      return ts;
+    },
+    [],
+  );
+
+  /**
+   * Trigger de confetti para sucesso
+   */
+  const triggerConfetti = useCallback(() => {
+    if (!canvasRef.current || !embedContainerRef.current) return;
 
     const canvas = canvasRef.current;
-    const containerRect = embedContainerRef.current?.getBoundingClientRect();
-
-    if (!containerRect) return;
+    const containerRect = embedContainerRef.current.getBoundingClientRect();
 
     canvas.width = containerRect.width;
     canvas.height = containerRect.height;
@@ -84,396 +157,459 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
     }
 
     animate();
-  };
+  }, []);
 
-  // Power BI load and embed
-  useEffect(() => {
-    let isMounted = true;
-    const abortController = new AbortController();
-    let powerBiClient: pbi.service.Service | null = null;
+  /**
+   * Garante que o serviço PowerBI está inicializado
+   */
+  const ensureService = useCallback(() => {
+    if (!powerBiService.current) {
+      powerBiService.current = new service.Service(
+        factories.hpmFactory,
+        factories.wpmpFactory,
+        factories.routerFactory,
+      );
+      logger("PowerBI Service inicializado", "debug");
+    }
+    return powerBiService.current;
+  }, [logger]);
 
-    const cleanupPreviousEmbed = () => {
-      console.log("[PowerBI] 🧹 Limpando embed anterior...");
-
-      // 1. Remover listeners do report anterior
-      if (reportRef.current) {
-        try {
-          reportRef.current.off("loaded");
-          reportRef.current.off("rendered");
-          reportRef.current.off("error");
-          console.log("[PowerBI] Listeners removidos");
-        } catch (e) {
-          console.warn("[PowerBI] Erro ao remover listeners:", e);
-        }
-        reportRef.current = null;
+  /**
+   * Limpa container com segurança total
+   */
+  const cleanupContainer = useCallback(
+    async (cycleToken: string): Promise<void> => {
+      if (embedCycleToken.current !== cycleToken) {
+        logger("Cleanup cancelado - ciclo diferente", "debug");
+        return;
       }
 
-      // 2. Resetar Power BI Service ANTES de limpar container
-      // Isso é importante - o Service precisa saber que o container vai mudar
-      if (powerBiClient && embedContainerRef.current) {
-        try {
-          powerBiClient.reset(embedContainerRef.current);
-          console.log("[PowerBI] Power BI Service resetado");
-        } catch (e) {
-          console.warn("[PowerBI] Erro ao resetar Power BI Service:", e);
-        }
-      }
+      const container = embedContainerRef.current;
+      if (!container) return;
 
-      // 3. Limpar container completamente
-      if (embedContainerRef.current) {
-        try {
-          // Remover todos os iframes e elementos
-          const iframes = embedContainerRef.current.querySelectorAll("iframe");
-          iframes.forEach((iframe) => {
-            try {
-              iframe.remove();
-              console.log("[PowerBI] iframe removido");
-            } catch (e) {
-              console.warn("[PowerBI] Erro ao remover iframe:", e);
-            }
-          });
-
-          // Limpar todo o conteúdo
-          embedContainerRef.current.innerHTML = "";
-
-          // Remover atributos de estilo
-          embedContainerRef.current.style.cssText = "";
-
-          // Remover atributos customizados que o Power BI pode ter adicionado
-          Array.from(embedContainerRef.current.attributes).forEach((attr) => {
-            if (
-              attr.name.startsWith("data-") ||
-              attr.name.startsWith("aria-")
-            ) {
-              embedContainerRef.current?.removeAttribute(attr.name);
-            }
-          });
-
-          console.log("[PowerBI] Container totalmente limpo");
-        } catch (e) {
-          console.warn("[PowerBI] Erro ao limpar container:", e);
-        }
-      }
-
-      // 4. Destruir instância anterior do Service
-      if (powerBiClient) {
-        try {
-          // Setar como null para garbage collection
-          powerBiClient = null;
-          console.log(
-            "[PowerBI] Instância anterior do Power BI Service destruída",
-          );
-        } catch (e) {
-          console.warn("[PowerBI] Erro ao destruir Service:", e);
-        }
-      }
-    };
-
-    const embedReport = async () => {
       try {
-        if (!isMounted) return;
+        const svc = ensureService();
 
-        // Validar dados do dashboard
-        const validationErrors = validateDashboardData(dashboard);
-        if (validationErrors.length > 0) {
-          console.error("[PowerBI] ❌ Validação falhou:", validationErrors);
-          throw new Error(validationErrors.join("; "));
+        if (powerBiReport.current) {
+          try {
+            powerBiReport.current.off("loaded");
+            powerBiReport.current.off("rendered");
+            powerBiReport.current.off("error");
+          } catch (e) {
+            // Ignora erros ao remover listeners
+          }
         }
 
-        console.log(`[PowerBI] 📊 Carregando dashboard: ${dashboard.title}`);
-        console.log(
-          `[PowerBI] Report ID: ${dashboard.report_id}, Dataset ID: ${dashboard.dataset_id}`,
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        const existingEmbed = svc.get(container);
+        if (existingEmbed) {
+          logger("Resetando embed existente", "debug");
+          svc.reset(container);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        powerBiReport.current = null;
+        logger("Container limpo com sucesso", "debug");
+      } catch (e) {
+        logger(
+          `Erro durante cleanup: ${e instanceof Error ? e.message : String(e)}`,
+          "warn",
+        );
+      }
+    },
+    [ensureService, logger],
+  );
+
+  /**
+   * Valida e normaliza a URL de embed
+   */
+  const validateEmbedUrl = useCallback(
+    (url: string): boolean => {
+      try {
+        if (!url || typeof url !== "string") {
+          logger("URL vazia ou inválida", "error");
+          return false;
+        }
+
+        const trimmed = url.trim();
+
+        if (!trimmed.startsWith("https://")) {
+          logger("URL sem HTTPS", "error");
+          return false;
+        }
+
+        const urlObj = new URL(trimmed);
+
+        const validHosts = ["app.powerbi.com", "powerbi.com"];
+        const isValidHost = validHosts.some(
+          (host) =>
+            urlObj.hostname === host || urlObj.hostname.endsWith(`.${host}`),
         );
 
-        logDashboardTransition(
-          "previous",
-          dashboard.title,
-          dashboard.report_id,
-          dashboard.dataset_id,
+        if (!isValidHost) {
+          logger(`Host inválido: ${urlObj.hostname}`, "warn");
+        }
+
+        logger("URL validada com sucesso", "debug");
+        return true;
+      } catch (e) {
+        logger(
+          `Erro ao validar URL: ${e instanceof Error ? e.message : String(e)}`,
+          "error",
         );
+        return false;
+      }
+    },
+    [logger],
+  );
 
-        setIsLoading(true);
-        setIsAuthenticating(true);
-        setEmbedError(null);
+  /**
+   * Busca token com cache inteligente
+   */
+  const fetchEmbedToken = useCallback(
+    async (
+      cycleToken: string,
+    ): Promise<{ token: string; embedUrl: string } | null> => {
+      const cacheKey = `${dashboard.report_id}:${dashboard.dataset_id}`;
+      const cached = tokenCache.current[cacheKey];
 
-        // Limpar embed anterior antes de começar
-        cleanupPreviousEmbed();
+      if (cached && cached.expires > Date.now()) {
+        logger("Usando token do cache", "debug");
+        return { token: cached.token, embedUrl: cached.embedUrl };
+      }
 
-        // Obter token com AbortController
+      try {
+        logger("Buscando novo token de embed...", "info");
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+
         const response = await apiFetch(
           `/powerbi/embed-token/${dashboard.report_id}?datasetId=${dashboard.dataset_id}`,
-          {
-            signal: abortController.signal,
-          },
+          { signal: controller.signal },
         );
 
-        if (!response.ok) {
-          throw new Error(
-            `HTTP ${response.status}: falha ao obter token do servidor`,
-          );
+        clearTimeout(timeout);
+
+        if (embedCycleToken.current !== cycleToken) {
+          logger("Fetch cancelado - ciclo mudou", "debug");
+          return null;
         }
 
-        if (!isMounted) {
-          console.log("[PowerBI] Componente desmontado, abortando");
-          return;
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "");
+          throw new Error(
+            `HTTP ${response.status}: ${errorText || response.statusText}`,
+          );
         }
 
         const data = await response.json();
-        const { token, embedUrl } = data;
 
-        console.group("[PowerBI] 📊 Resposta do servidor recebida");
-        console.log("Token:", token ? "✅ Presente" : "❌ Ausente");
-        console.log("Token type:", typeof token);
-        console.log("Token length:", token?.length || 0);
-
-        console.log("embedUrl:", embedUrl ? "✅ Presente" : "❌ Ausente");
-        if (embedUrl) {
-          console.log("embedUrl type:", typeof embedUrl);
-          console.log("embedUrl length:", embedUrl.length);
-          // Log URL completa (importante para debug)
-          console.log("embedUrl COMPLETA:", embedUrl);
-          console.log("Válida (https):", embedUrl.startsWith("https://"));
-          console.log(
-            "Contém app.powerbi.com:",
-            embedUrl.includes("app.powerbi.com"),
-          );
-          console.log("Contém reportId:", embedUrl.includes("reportId"));
-          console.log("Contém groupId:", embedUrl.includes("groupId"));
-        }
-        console.groupEnd();
-
-        // Validação rigorosa
-        if (!token || typeof token !== "string" || token.trim().length === 0) {
-          throw new Error(
-            `Token inválido: tipo=${typeof token}, length=${token?.length || 0}`,
-          );
+        if (!data || !data.token || !data.embedUrl) {
+          throw new Error("Resposta incompleta do servidor");
         }
 
-        if (
-          !embedUrl ||
-          typeof embedUrl !== "string" ||
-          embedUrl.trim().length === 0
-        ) {
-          throw new Error(
-            `embedUrl inválida: tipo=${typeof embedUrl}, length=${embedUrl?.length || 0}`,
-          );
-        }
-
-        if (!isMounted) {
-          console.log("[PowerBI] Componente desmontado, abortando");
-          return;
-        }
-
-        // Validar URL ANTES de usar
-        if (
-          !embedUrl ||
-          typeof embedUrl !== "string" ||
-          embedUrl.trim().length === 0
-        ) {
-          throw new Error(
-            `embedUrl inválida: tipo=${typeof embedUrl}, length=${embedUrl?.length || 0}`,
-          );
-        }
-
-        if (!embedUrl.startsWith("https://")) {
-          throw new Error(
-            `embedUrl não começa com https://: ${embedUrl.substring(0, 50)}`,
-          );
-        }
-
-        if (!embedUrl.includes("app.powerbi.com")) {
-          throw new Error(
-            `embedUrl não contém app.powerbi.com: ${embedUrl.substring(0, 50)}`,
-          );
-        }
-
-        console.log("[PowerBI] ✅ embedUrl passou na validação");
-
-        // Criar NOVA instância do Power BI Service para este dashboard
-        powerBiClient = new pbi.service.Service(
-          pbi.factories.hpmFactory,
-          pbi.factories.wpmpFactory,
-          pbi.factories.routerFactory,
-        );
-
-        console.log("[PowerBI] ✅ Nova instância do Power BI Service criada");
-
-        const embedConfig: pbi.IReportEmbedConfiguration = {
-          type: "report",
-          id: dashboard.report_id,
-          embedUrl: embedUrl,
-          accessToken: token,
-          tokenType: pbi.models.TokenType.Embed,
-          permissions: pbi.models.Permissions.All,
-          settings: {
-            filterPaneEnabled: true,
-            navContentPaneEnabled: true,
-            bars: {
-              statusBar: { visible: true },
-            },
-          },
+        const expiresIn = data.expiresInMs || 3600000;
+        const expires = Date.now() + expiresIn - 300000;
+        tokenCache.current[cacheKey] = {
+          token: data.token,
+          embedUrl: data.embedUrl,
+          expires,
         };
 
-        console.log("[PowerBI] 🔧 Configuração do embed pronta");
-
-        if (!embedContainerRef.current || !isMounted) {
-          console.log(
-            "[PowerBI] ❌ Container não disponível (null ou not mounted)",
-          );
-          throw new Error(
-            "embedContainerRef.current is null or component not mounted",
-          );
-        }
-
-        // Verificar que o container existe no DOM
-        if (!document.body.contains(embedContainerRef.current)) {
-          console.log("[PowerBI] ❌ Container não está no DOM");
-          throw new Error("embedContainerRef.current is not in the DOM");
-        }
-
-        // IMPORTANTE: Verificar que o container está vazio ANTES de resetar
-        console.log(
-          "[PowerBI] Container estado antes de reset - Children count:",
-          embedContainerRef.current.children.length,
-          "- offsetHeight:",
-          embedContainerRef.current.offsetHeight,
-        );
-
-        // Resetar container e criar novo embed
-        try {
-          powerBiClient.reset(embedContainerRef.current);
-          console.log("[PowerBI] Container resetado com sucesso");
-        } catch (resetError) {
-          console.warn("[PowerBI] Erro ao resetar container:", resetError);
-          // Se reset falhou, limpar manualmente
-          embedContainerRef.current.innerHTML = "";
-          console.log("[PowerBI] Container limpo manualmente");
-        }
-
-        if (!isMounted) {
-          console.log("[PowerBI] Componente desmontado após limpeza");
-          return;
-        }
-
-        console.log("[PowerBI] 🚀 Chamando powerBiClient.embed()...");
-        console.log("[PowerBI] embedContainerRef.current status:", {
-          exists: !!embedContainerRef.current,
-          inDOM: embedContainerRef.current
-            ? document.body.contains(embedContainerRef.current)
-            : false,
-          children: embedContainerRef.current?.children.length || 0,
-          clientRect: embedContainerRef.current?.getBoundingClientRect(),
-        });
-
-        let report: pbi.Report;
-        try {
-          report = powerBiClient.embed(
-            embedContainerRef.current,
-            embedConfig,
-          ) as pbi.Report;
-        } catch (embedError) {
-          console.error("[PowerBI] ❌ Erro durante embed:", embedError);
-          console.error("[PowerBI] embedContainerRef no momento do erro:", {
-            exists: !!embedContainerRef.current,
-            inDOM: embedContainerRef.current
-              ? document.body.contains(embedContainerRef.current)
-              : false,
-          });
-          throw new Error(
-            `Erro ao chamar embed: ${embedError instanceof Error ? embedError.message : String(embedError)}`,
+        logger("Token obtido com sucesso", "success");
+        return { token: data.token, embedUrl: data.embedUrl };
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") {
+          logger("Request de token cancelada (timeout)", "error");
+        } else {
+          logger(
+            `Erro ao buscar token: ${e instanceof Error ? e.message : String(e)}`,
+            "error",
           );
         }
-        console.log("[PowerBI] ✅ powerBiClient.embed() completou");
+        return null;
+      }
+    },
+    [dashboard.dataset_id, dashboard.report_id, logger],
+  );
 
-        if (!isMounted) {
-          console.log("[PowerBI] Componente desmontado após embed");
-          return;
+  /**
+   * Processo principal de embed com proteção contra race conditions
+   */
+  const embedReport = useCallback(async (): Promise<void> => {
+    const cycleToken = `${Date.now()}-${Math.random()}`;
+    embedCycleToken.current = cycleToken;
+
+    if (isEmbedding.current) {
+      logger("Embed já em andamento, adicionando à fila", "debug");
+      embedQueue.current.push(async () => {
+        if (embedCycleToken.current === cycleToken) {
+          await embedReport();
         }
+      });
+      return;
+    }
 
-        reportRef.current = report;
+    isEmbedding.current = true;
+    setIsLoading(true);
+    setIsReady(false);
+    setError(null);
 
-        // Listeners com verificação isMounted
-        report.on("loaded", () => {
-          console.log("[PowerBI] ✅ Relatório carregado");
-          if (isMounted) {
-            diagnostics.recordAttempt(
-              dashboard.title,
-              dashboard.report_id,
-              dashboard.dataset_id,
-              "✅ Token obtido com sucesso",
-              "✅ Embed URL válida",
-            );
+    try {
+      logger(
+        `Iniciando embed: ${dashboard.title} (ciclo: ${cycleToken.slice(0, 8)})`,
+        "info",
+      );
+
+      // Fase 1: Preparação
+      setLoadingPhase("preparing");
+      setLoadingProgress(10);
+
+      if (
+        lastEmbedReportId.current &&
+        lastEmbedReportId.current !== dashboard.report_id
+      ) {
+        await cleanupContainer(cycleToken);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      if (embedCycleToken.current !== cycleToken) {
+        logger("Embed cancelado - novo ciclo iniciado", "debug");
+        return;
+      }
+
+      // Fase 2: Autenticação
+      setLoadingPhase("authenticating");
+      setLoadingProgress(25);
+
+      const tokenData = await fetchEmbedToken(cycleToken);
+      if (!tokenData) {
+        throw new Error("Falha ao obter token de embed");
+      }
+
+      if (embedCycleToken.current !== cycleToken) {
+        logger("Embed cancelado após obter token", "debug");
+        return;
+      }
+
+      // Fase 3: Validação
+      setLoadingPhase("validating");
+      setLoadingProgress(40);
+
+      if (!validateEmbedUrl(tokenData.embedUrl)) {
+        throw new Error("URL de embed inválida");
+      }
+
+      const embedContainer = embedContainerRef.current;
+      if (!embedContainer) {
+        throw new Error("Container de embed não encontrado");
+      }
+
+      // Fase 4: Configuração
+      setLoadingPhase("configuring");
+      setLoadingProgress(55);
+
+      const embedConfig: IReportEmbedConfiguration = {
+        type: "report",
+        id: dashboard.report_id,
+        embedUrl: tokenData.embedUrl,
+        accessToken: tokenData.token,
+        tokenType: models.TokenType.Embed,
+        permissions: models.Permissions.All, // Mudando para All como no modelo antigo
+        settings: {
+          filterPaneEnabled: true,
+          navContentPaneEnabled: true,
+          bars: {
+            statusBar: {
+              visible: true, // Habilitando status bar como no modelo antigo
+            },
+          },
+          layoutType: models.LayoutType.Custom,
+          customLayout: {
+            displayOption: models.DisplayOption.FitToWidth,
+          },
+          background: models.BackgroundType.Transparent,
+          localeSettings: {
+            language: "pt-BR",
+            formatLocale: "pt-BR",
+          },
+        },
+      };
+
+      // Fase 5: Renderização
+      setLoadingPhase("rendering");
+      setLoadingProgress(70);
+
+      // IMPORTANTE: Não ocultar o container, apenas garantir que está visível
+      embedContainer.style.display = "block";
+      embedContainer.style.visibility = "visible";
+      embedContainer.style.position = "relative";
+      embedContainer.style.width = "100%";
+      embedContainer.style.height = "100%";
+      embedContainer.style.overflow = "hidden";
+
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+      }
+
+      const svc = ensureService();
+
+      // Reset antes de embedar (como no modelo antigo)
+      svc.reset(embedContainer);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      logger("[PowerBI] Embed config:", "debug");
+      const report = svc.embed(embedContainer, embedConfig) as Report;
+
+      powerBiReport.current = report;
+      lastEmbedReportId.current = dashboard.report_id;
+
+      let isRendered = false;
+      const renderTimeout = setTimeout(() => {
+        if (!isRendered && embedCycleToken.current === cycleToken) {
+          logger("Timeout de renderização - tentando retry", "warn");
+          handleRetry();
+        }
+      }, 30000);
+
+      report.on("loaded", () => {
+        if (embedCycleToken.current !== cycleToken) return;
+        logger("[PowerBI] Loaded ✅", "success");
+        setLoadingProgress(85);
+        setLoadingPhase("finalizing");
+      });
+
+      report.on("rendered", () => {
+        if (embedCycleToken.current !== cycleToken) return;
+
+        isRendered = true;
+        clearTimeout(renderTimeout);
+
+        logger("[PowerBI] Rendered 🎉", "success");
+        setLoadingProgress(100);
+
+        setTimeout(() => {
+          if (embedCycleToken.current === cycleToken) {
             setIsLoading(false);
-            setIsAuthenticating(false);
-            triggerConfetti();
+            setIsReady(true);
+            setError(null);
+            retryCount.current = 0;
+            triggerConfetti(); // Adiciona confetti como no modelo antigo
+            if (onSuccess) onSuccess();
           }
-        });
+        }, 300);
+      });
 
-        report.on("rendered", () => {
-          console.log("[PowerBI] 🎉 Relatório renderizado");
-          if (isMounted) {
-            setIsAuthenticating(false);
-          }
-        });
+      report.on("error", (event: any) => {
+        if (embedCycleToken.current !== cycleToken) return;
 
-        report.on("error", (event: any) => {
-          console.error("[PowerBI] ❌ Erro no relatório:", event);
-          if (isMounted) {
-            const errorMsg =
-              event?.detail?.message ||
-              "❌ Erro desconhecido ao carregar relatório";
-            diagnostics.recordAttempt(
-              dashboard.title,
-              dashboard.report_id,
-              dashboard.dataset_id,
-              "⚠️ Token obtido",
-              "❌ Erro ao renderizar",
-              [errorMsg],
-            );
-            setEmbedError(errorMsg);
-            setIsLoading(false);
-            setIsAuthenticating(false);
-          }
-        });
-      } catch (err: any) {
-        if (err.name === "AbortError") {
-          console.log("[PowerBI] ⏹️ Requisição cancelada (dashboard mudou)");
-          return;
-        }
+        clearTimeout(renderTimeout);
+        const errorMessage =
+          event?.detail?.message || event?.message || "Erro desconhecido";
 
-        console.error("[PowerBI] ❌ Erro ao carregar:", err);
-        const errorMsg =
-          err?.message || "Erro inesperado ao carregar dashboard";
+        logger(`[PowerBI] Error: ${errorMessage}`, "error");
 
-        if (isMounted) {
-          diagnostics.recordAttempt(
-            dashboard.title,
-            dashboard.report_id,
-            dashboard.dataset_id,
-            "❌ Erro ao obter token",
-            "❌ Não carregado",
-            [errorMsg],
-          );
-          setEmbedError(errorMsg);
+        if (retryCount.current < MAX_RETRIES) {
+          logger(`Tentativa ${retryCount.current + 1}/${MAX_RETRIES}`, "warn");
+          handleRetry();
+        } else {
+          setError(errorMessage);
           setIsLoading(false);
-          setIsAuthenticating(false);
+          if (onError) onError(errorMessage);
+        }
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger(`[PowerBI] Embed failed: ${errorMessage}`, "error");
+
+      if (embedCycleToken.current === cycleToken) {
+        if (retryCount.current < MAX_RETRIES) {
+          handleRetry();
+        } else {
+          setError(errorMessage);
+          setIsLoading(false);
+          setIsReady(false);
+          if (onError) onError(errorMessage);
         }
       }
-    };
+    } finally {
+      isEmbedding.current = false;
 
-    embedReport();
+      if (embedQueue.current.length > 0) {
+        const nextEmbed = embedQueue.current.shift();
+        if (nextEmbed) {
+          setTimeout(nextEmbed, 100);
+        }
+      }
+    }
+  }, [
+    dashboard,
+    cleanupContainer,
+    fetchEmbedToken,
+    validateEmbedUrl,
+    ensureService,
+    logger,
+    triggerConfetti,
+    onSuccess,
+    onError,
+  ]);
 
-    return () => {
-      console.log("[PowerBI] 🔌 Limpeza: Desmontando componente");
-      isMounted = false;
-      abortController.abort();
-      cleanupPreviousEmbed();
-    };
-  }, [dashboard.report_id, dashboard.dataset_id, dashboard.title]);
+  /**
+   * Retry com delay progressivo
+   */
+  const handleRetry = useCallback(() => {
+    retryCount.current++;
+    const delay = RETRY_DELAY * retryCount.current;
 
-  // Fullscreen sync
+    logger(`Aguardando ${delay}ms antes do retry...`, "info");
+
+    setTimeout(() => {
+      embedReport();
+    }, delay);
+  }, [embedReport, logger]);
+
+  /**
+   * Effect principal - detecta mudança de dashboard
+   */
   useEffect(() => {
-    const handler = () =>
+    if (dashboard.report_id !== lastEmbedReportId.current) {
+      logger(`Dashboard alterado: ${dashboard.title}`, "info");
+      retryCount.current = 0;
+
+      const timeoutId = setTimeout(() => {
+        embedReport();
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [dashboard.report_id, dashboard.title, embedReport, logger]);
+
+  /**
+   * Cleanup no unmount
+   */
+  useEffect(() => {
+    return () => {
+      const cycleToken = embedCycleToken.current;
+      embedCycleToken.current = "";
+
+      (async () => {
+        await cleanupContainer(cycleToken);
+      })();
+
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+      }
+    };
+  }, [cleanupContainer]);
+
+  /**
+   * Gerenciamento de fullscreen
+   */
+  useEffect(() => {
+    const handleFullscreenChange = () => {
       setIsFullscreen(
         Boolean(
           document.fullscreenElement ||
@@ -481,21 +617,27 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
             (document as any).mozFullScreenElement,
         ),
       );
+    };
 
-    document.addEventListener("fullscreenchange", handler);
-    document.addEventListener("webkitfullscreenchange", handler);
-    document.addEventListener("mozfullscreenchange", handler);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
 
     return () => {
-      document.removeEventListener("fullscreenchange", handler);
-      document.removeEventListener("webkitfullscreenchange", handler);
-      document.removeEventListener("mozfullscreenchange", handler);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange,
+      );
     };
   }, []);
 
   const toggleFullscreen = async () => {
     const doc: any = document;
-
     const isFull =
       doc.fullscreenElement ||
       doc.webkitFullscreenElement ||
@@ -507,20 +649,47 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         if (el.requestFullscreen) await el.requestFullscreen();
         else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
         else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
-        setIsFullscreen(true);
       } else {
         if (doc.exitFullscreen) await doc.exitFullscreen();
         else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
         else if (doc.mozCancelFullScreen) await doc.mozCancelFullScreen();
-        setIsFullscreen(false);
       }
     } catch (error) {
-      console.warn("Erro ao alternar fullscreen:", error);
+      logger(`Erro ao alternar fullscreen: ${error}`, "error");
     }
+  };
+
+  const formatTimestamp = (ts: number) => {
+    return new Date(ts).toLocaleTimeString("pt-BR", { hour12: false });
+  };
+
+  const getPhaseIcon = () => {
+    const icons = {
+      preparing: <Loader2 className="animate-spin" />,
+      authenticating: <Lock />,
+      validating: <Shield />,
+      configuring: <Layers />,
+      rendering: <Activity />,
+      finalizing: <Sparkles />,
+    };
+    return icons[loadingPhase as keyof typeof icons] || <Database />;
+  };
+
+  const getPhaseText = () => {
+    const texts = {
+      preparing: "Preparando ambiente...",
+      authenticating: "Autenticando...",
+      validating: "Validando configurações...",
+      configuring: "Configurando dashboard...",
+      rendering: "Renderizando visualizações...",
+      finalizing: "Finalizando carregamento...",
+    };
+    return texts[loadingPhase as keyof typeof texts] || "Iniciando...";
   };
 
   return (
     <div className="w-full h-full flex flex-col">
+      {/* Header como no modelo antigo */}
       <div className="bi-dashboard-header px-4 py-2 border-b bg-white flex items-center justify-between">
         <div>
           <h1 className="text-base font-semibold text-gray-900">
@@ -530,50 +699,83 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+            title="Console de Depuração"
+          >
+            <Terminal className="w-4 h-4" />
+          </button>
+          <button
             aria-label={
               isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"
             }
             onClick={toggleFullscreen}
             className="bi-control-button"
           >
-            {isFullscreen ? "🡻" : "🡹"}
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
           </button>
         </div>
       </div>
 
+      {/* Container principal */}
       <div className="flex-1 bi-viewer-outer" ref={containerRef}>
+        {/* Loading overlay */}
         {isLoading && (
           <div className="bi-loading-overlay">
             <div className="flex flex-col items-center gap-3">
               <Loader className="w-6 h-6 animate-spin text-primary" />
               <p className="text-sm text-gray-600">
-                {isAuthenticating ? "Logando..." : "Carregando dashboard..."}
+                {loadingPhase === "authenticating"
+                  ? "Logando..."
+                  : getPhaseText()}
               </p>
+              <div className="w-32 bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-300"
+                  style={{ width: `${loadingProgress}%` }}
+                />
+              </div>
             </div>
           </div>
         )}
 
-        {embedError && (
+        {/* Error overlay */}
+        {error && !isLoading && (
           <div className="bi-loading-overlay">
             <div className="flex flex-col items-center gap-3">
               <div className="text-4xl">⚠️</div>
-              <p className="text-sm text-red-600">{embedError}</p>
+              <p className="text-sm text-red-600">{error}</p>
+              <button
+                onClick={() => {
+                  retryCount.current = 0;
+                  embedReport();
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                Tentar novamente
+              </button>
             </div>
           </div>
         )}
 
+        {/* Embed container - SEMPRE VISÍVEL como no modelo antigo */}
         <div
           className="bi-embed-card"
           ref={embedContainerRef}
-          key={`embed-container-${dashboard.report_id}`}
           style={{
             width: "100%",
             height: "100%",
-            display: embedError ? "none" : "block",
+            display: error ? "none" : "block", // Só oculta em caso de erro
             position: "relative",
             overflow: "hidden",
+            backgroundColor: "#ffffff", // Fundo branco para garantir visibilidade
           }}
         >
+          {/* Canvas para confetti */}
           <canvas
             ref={canvasRef}
             style={{
@@ -584,6 +786,8 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
               zIndex: 999,
             }}
           />
+
+          {/* Overlay de sucesso */}
           <div
             ref={successOverlayRef}
             style={{
@@ -614,6 +818,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           </div>
         </div>
 
+        {/* Botão de fullscreen flutuante */}
         {isFullscreen && (
           <button
             onClick={toggleFullscreen}
@@ -622,6 +827,83 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           >
             ×
           </button>
+        )}
+
+        {/* Painel de debug */}
+        {showDebug && (
+          <div className="absolute right-0 top-0 bottom-0 w-96 bg-slate-900 text-white shadow-xl z-20 flex flex-col overflow-hidden border-l border-slate-700">
+            <div className="p-3 border-b border-slate-700 flex items-center justify-between bg-slate-800">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-blue-400" />
+                <h3 className="font-mono text-sm font-medium">
+                  Console de Depuração
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowDebug(false)}
+                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2 font-mono text-xs">
+              <div className="space-y-1">
+                {logs.map((log, idx) => (
+                  <div
+                    key={`${log.timestamp}-${idx}`}
+                    className={`py-1 px-2 rounded ${
+                      log.type === "error"
+                        ? "bg-red-950 text-red-300"
+                        : log.type === "success"
+                          ? "bg-green-950 text-green-300"
+                          : log.type === "warn"
+                            ? "bg-yellow-950 text-yellow-300"
+                            : "text-slate-300"
+                    }`}
+                  >
+                    <span className="text-slate-500 mr-1">
+                      {formatTimestamp(log.timestamp)}
+                    </span>
+                    <span>{log.message}</span>
+                  </div>
+                ))}
+                {logs.length === 0 && (
+                  <div className="text-slate-500 p-4 text-center">
+                    Nenhum log disponível
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-3 border-t border-slate-700 bg-slate-800 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setLogs([]);
+                    logger("Console limpo", "info");
+                  }}
+                  className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-xs transition-colors"
+                >
+                  Limpar Console
+                </button>
+                <button
+                  onClick={() => {
+                    retryCount.current = 0;
+                    embedReport();
+                  }}
+                  className="px-3 py-1.5 bg-blue-700 hover:bg-blue-600 rounded text-xs transition-colors"
+                >
+                  Recarregar
+                </button>
+              </div>
+
+              <div className="text-xs text-slate-400">
+                Ciclo: {embedCycleToken.current.slice(0, 8)} | Retry:{" "}
+                {retryCount.current}/{MAX_RETRIES}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
