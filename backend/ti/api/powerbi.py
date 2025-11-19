@@ -144,6 +144,7 @@ async def get_embed_token(
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             # 3a. Primeiro, obter o embedUrl correto do relatório
+            embed_url_value = None
             try:
                 report_response = await client.get(
                     f"{POWERBI_API_URL}/groups/{POWERBI_WORKSPACE_ID}/reports/{report_id}",
@@ -153,17 +154,24 @@ async def get_embed_token(
                 if report_response.status_code == 200:
                     report_data = report_response.json()
                     embed_url_value = report_data.get("embedUrl")
-                    print(f"[POWERBI] [EMBED-TOKEN] Embed URL obtida da API: {embed_url_value}")
+
+                    if embed_url_value and isinstance(embed_url_value, str) and embed_url_value.startswith("https://"):
+                        print(f"[POWERBI] [EMBED-TOKEN] ✅ Embed URL obtida da API com sucesso")
+                        print(f"[POWERBI] [EMBED-TOKEN] URL: {embed_url_value[:100]}...")
+                    else:
+                        print(f"[POWERBI] [EMBED-TOKEN] ⚠️ embedUrl inválida na resposta: {embed_url_value}")
+                        embed_url_value = None
                 else:
                     print(f"[POWERBI] [EMBED-TOKEN] ⚠️ Falha ao obter report details: {report_response.status_code}")
-                    # Fallback para construir manualmente
-                    embed_url_value = f"https://app.powerbi.com/reportEmbed?reportId={report_id}&ctid={POWERBI_TENANT_ID}"
-                    print(f"[POWERBI] [EMBED-TOKEN] Usando embed URL fallback: {embed_url_value}")
+                    print(f"[POWERBI] [EMBED-TOKEN] Response: {report_response.text[:200]}")
             except Exception as e:
                 print(f"[POWERBI] [EMBED-TOKEN] ⚠️ Erro ao obter embedUrl: {e}")
-                # Fallback
-                embed_url_value = f"https://app.powerbi.com/reportEmbed?reportId={report_id}&ctid={POWERBI_TENANT_ID}"
-                print(f"[POWERBI] [EMBED-TOKEN] Usando embed URL fallback: {embed_url_value}")
+
+            # Fallback: construir URL corretamente com groupId
+            if not embed_url_value:
+                print(f"[POWERBI] [EMBED-TOKEN] Usando embed URL fallback com groupId")
+                embed_url_value = f"https://app.powerbi.com/reportEmbed?reportId={report_id}&groupId={POWERBI_WORKSPACE_ID}&w=2"
+                print(f"[POWERBI] [EMBED-TOKEN] Fallback URL: {embed_url_value}")
 
             # 3b. Gerar o token (aumentado timeout para 60s porque api.powerbi.com pode ser lenta)
             try:
