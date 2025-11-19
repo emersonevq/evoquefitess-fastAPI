@@ -33,19 +33,32 @@ export function useDashboards() {
         setLoading(true);
         setError(null);
 
-        console.log("[BI] Buscando dashboards do banco de dados...");
+        console.log("[BI] 📥 Buscando dashboards do banco de dados...");
 
         const response = await apiFetch("/powerbi/db/dashboards");
 
         if (!response.ok) {
           throw new Error(
-            `HTTP ${response.status}: Falha ao buscar dashboards`,
+            `HTTP ${response.status}: Falha ao buscar dashboards do servidor`,
           );
         }
 
         const dashboards: Dashboard[] = await response.json();
 
-        console.log(`[BI] ${dashboards.length} dashboards encontrados`);
+        if (!Array.isArray(dashboards)) {
+          throw new Error(
+            "Resposta inválida: esperado array de dashboards",
+          );
+        }
+
+        console.log(`[BI] ✅ ${dashboards.length} dashboards encontrados`);
+
+        // Log cada dashboard para debug
+        dashboards.forEach((dash) => {
+          console.log(`[BI]   - ${dash.title} (${dash.dashboard_id})`);
+          console.log(`[BI]     Report: ${dash.report_id}`);
+          console.log(`[BI]     Dataset: ${dash.dataset_id}`);
+        });
 
         // Group dashboards by category
         const grouped = dashboards.reduce((acc, dashboard) => {
@@ -71,11 +84,12 @@ export function useDashboards() {
           category.dashboards.sort((a, b) => a.order - b.order);
         });
 
+        console.log(`[BI] ✅ Dashboards organizados em ${grouped.length} categorias`);
         setCategories(grouped);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro desconhecido";
-        console.error("[BI] Erro ao buscar dashboards:", message);
+        console.error("[BI] ❌ Erro ao buscar dashboards:", message);
         setError(message);
       } finally {
         setLoading(false);
