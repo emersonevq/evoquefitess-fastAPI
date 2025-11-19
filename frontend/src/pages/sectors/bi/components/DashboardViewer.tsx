@@ -211,23 +211,12 @@ export default function DashboardViewer({
         return { isValid: false, errors, warnings };
       }
 
-      let cleanUrl = url;
-      try {
-        const decoded = decodeURIComponent(url);
-        if (decoded !== url) {
-          cleanUrl = decoded;
-          addLog("URL decodificada", "info");
-        }
-      } catch (e) {
-        warnings.push("Falha ao decodificar URL (usando original)");
-      }
-
-      if (!cleanUrl.startsWith("https://")) {
-        errors.push(`Protocolo inválido: ${cleanUrl.substring(0, 10)}`);
+      if (!url.startsWith("https://")) {
+        errors.push(`Protocolo inválido: ${url.substring(0, 10)}`);
       }
 
       try {
-        const urlObj = new URL(cleanUrl);
+        const urlObj = new URL(url);
         
         if (!urlObj.hostname.includes("powerbi.com")) {
           errors.push(`Domínio inválido: ${urlObj.hostname}`);
