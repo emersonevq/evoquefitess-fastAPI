@@ -200,8 +200,10 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         cleanupPreviousEmbed();
 
         // Obter token com AbortController
+        const encodedReportId = encodeURIComponent(dashboard.report_id);
+        const encodedDatasetId = encodeURIComponent(dashboard.dataset_id);
         const response = await apiFetch(
-          `/powerbi/embed-token/${dashboard.report_id}?datasetId=${dashboard.dataset_id}`,
+          `/powerbi/embed-token/${encodedReportId}?datasetId=${encodedDatasetId}`,
           {
             signal: abortController.signal,
           },
