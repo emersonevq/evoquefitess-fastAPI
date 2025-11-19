@@ -338,12 +338,8 @@ export default function DashboardViewer({
         validation.warnings.forEach((w) => addLog(`⚠️ ${w}`, "info"));
       }
 
-      let embedUrl = rawUrl;
-      try {
-        embedUrl = decodeURIComponent(rawUrl);
-      } catch (e) {
-        addLog("Usando URL sem decodificação", "info");
-      }
+      // Usar a URL exatamente como vem do backend (sem decodificar novamente)
+      const embedUrl = rawUrl;
 
       addLog("URL validada ✅", "success");
 
