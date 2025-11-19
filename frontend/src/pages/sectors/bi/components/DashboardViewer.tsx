@@ -106,6 +106,19 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           throw new Error("Token ou embedUrl ausente");
         }
 
+        // Validate embedUrl format
+        if (!embedUrl.startsWith("https://")) {
+          throw new Error(`embedUrl inválida: ${embedUrl.substring(0, 100)}`);
+        }
+
+        if (!embedUrl.includes("reportId=")) {
+          throw new Error("embedUrl não contém reportId");
+        }
+
+        console.log("[PowerBI] embedUrl validada:", embedUrl.substring(0, 100) + "...");
+        console.log("[PowerBI] Tem groupId?", embedUrl.includes("groupId"));
+        console.log("[PowerBI] Tem config?", embedUrl.includes("config"));
+
         const powerBiClient = new pbi.service.Service(
           pbi.factories.hpmFactory,
           pbi.factories.wpmpFactory,
