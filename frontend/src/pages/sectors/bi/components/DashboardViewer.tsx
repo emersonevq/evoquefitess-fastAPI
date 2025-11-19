@@ -86,6 +86,15 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
     animate();
   };
 
+  // Reset embed container ref when dashboard changes
+  useEffect(() => {
+    // Quando o dashboard muda, resetar o ref para novo container
+    return () => {
+      // Cleanup: embedContainerRef será recreado pelo React via key prop
+      console.log("[PowerBI] 🔄 useEffect cleanup: Dashboard changed, container será recreado");
+    };
+  }, [dashboard.report_id, dashboard.dataset_id]);
+
   // Power BI load and embed
   useEffect(() => {
     let isMounted = true;
