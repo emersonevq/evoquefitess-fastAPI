@@ -200,6 +200,9 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         // Limpar embed anterior antes de começar
         cleanupPreviousEmbed();
 
+        // Marcar que estamos começando uma requisição de token
+        tokenRequestStarted = true;
+
         // Obter token com AbortController
         const encodedReportId = encodeURIComponent(dashboard.report_id);
         const encodedDatasetId = encodeURIComponent(dashboard.dataset_id);
@@ -216,8 +219,9 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           );
         }
 
-        if (!isMounted) {
-          console.log("[PowerBI] Componente desmontado, abortando");
+        // Se o componente foi desmontado ou outro dashboard foi selecionado enquanto aguardávamos a resposta
+        if (!isMounted || !tokenRequestStarted) {
+          console.log("[PowerBI] Componente desmontado ou dashboard mudou, abortando");
           return;
         }
 
