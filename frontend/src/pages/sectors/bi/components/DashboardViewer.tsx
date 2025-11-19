@@ -213,12 +213,35 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           return;
         }
 
+        // Validar URL ANTES de usar
+        if (!embedUrl || typeof embedUrl !== "string" || embedUrl.trim().length === 0) {
+          throw new Error(
+            `embedUrl inválida: tipo=${typeof embedUrl}, length=${embedUrl?.length || 0}`,
+          );
+        }
+
+        if (!embedUrl.startsWith("https://")) {
+          throw new Error(
+            `embedUrl não começa com https://: ${embedUrl.substring(0, 50)}`,
+          );
+        }
+
+        if (!embedUrl.includes("app.powerbi.com")) {
+          throw new Error(
+            `embedUrl não contém app.powerbi.com: ${embedUrl.substring(0, 50)}`,
+          );
+        }
+
+        console.log("[PowerBI] ✅ embedUrl passou na validação");
+
         // Criar NOVA instância do Power BI Service para este dashboard
         powerBiClient = new pbi.service.Service(
           pbi.factories.hpmFactory,
           pbi.factories.wpmpFactory,
           pbi.factories.routerFactory,
         );
+
+        console.log("[PowerBI] ✅ Nova instância do Power BI Service criada");
 
         const embedConfig: pbi.IReportEmbedConfiguration = {
           type: "report",
@@ -237,25 +260,47 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         };
 
         console.log("[PowerBI] 🔧 Configuração do embed pronta");
-        console.log("[PowerBI] Embed Config Type:", embedConfig.type);
-        console.log("[PowerBI] Embed Config Report ID:", embedConfig.id);
-        console.log("[PowerBI] Embed Config Embed URL:", embedConfig.embedUrl);
-        console.log("[PowerBI] Embed Config Access Token:", embedConfig.accessToken ? "✅ Present" : "❌ Missing");
 
         if (!embedContainerRef.current || !isMounted) {
           console.log("[PowerBI] Container não disponível, abortando");
           return;
         }
 
+        // IMPORTANTE: Verificar que o container está vazio ANTES de resetar
+        console.log(
+          "[PowerBI] Container estado antes de reset - Children count:",
+          embedContainerRef.current.children.length,
+        );
+
         // Resetar container e criar novo embed
-        powerBiClient.reset(embedContainerRef.current);
-        console.log("[PowerBI] Container resetado");
+        try {
+          powerBiClient.reset(embedContainerRef.current);
+          console.log("[PowerBI] Container resetado com sucesso");
+        } catch (resetError) {
+          console.warn("[PowerBI] Erro ao resetar container:", resetError);
+          // Se reset falhou, limpar manualmente
+          embedContainerRef.current.innerHTML = "";
+          console.log("[PowerBI] Container limpo manualmente");
+        }
+
+        if (!isMounted) {
+          console.log("[PowerBI] Componente desmontado após limpeza");
+          return;
+        }
 
         console.log("[PowerBI] 🚀 Chamando powerBiClient.embed()...");
-        const report = powerBiClient.embed(
-          embedContainerRef.current,
-          embedConfig,
-        ) as pbi.Report;
+        let report: pbi.Report;
+        try {
+          report = powerBiClient.embed(
+            embedContainerRef.current,
+            embedConfig,
+          ) as pbi.Report;
+        } catch (embedError) {
+          console.error("[PowerBI] ❌ Erro durante embed:", embedError);
+          throw new Error(
+            `Erro ao chamar embed: ${embedError instanceof Error ? embedError.message : String(embedError)}`,
+          );
+        }
         console.log("[PowerBI] ✅ powerBiClient.embed() completou");
 
         if (!isMounted) {
