@@ -1,4 +1,4 @@
-import { Dashboard, DashboardCategory } from "../data/dashboards";
+import { Dashboard, DashboardCategory } from "../hooks/useDashboards";
 import {
   LayoutDashboard,
   TrendingUp,
