@@ -93,6 +93,7 @@ def listar_usuarios(db: Session = Depends(get_db)):
                     "nivel_acesso": r[5],
                     "setor": s,
                     "setores": setores_list,
+                    "bi_subcategories": None,
                     "bloqueado": False,
                 })
             return rows
