@@ -166,6 +166,8 @@ def update_user(db: Session, user_id: int, data: dict) -> User:
         user.bloqueado = bool(data["bloqueado"])  # type: ignore
     if "setores" in data:
         _set_setores(user, data["setores"])  # type: ignore
+    if "bi_subcategories" in data:
+        _set_bi_subcategories(user, data["bi_subcategories"])  # type: ignore
 
     db.commit()
     db.refresh(user)
