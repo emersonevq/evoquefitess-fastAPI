@@ -448,6 +448,8 @@ export default function DashboardViewer({
       embedContainer.style.width = "100%";
       embedContainer.style.height = "100%";
       embedContainer.style.overflow = "visible";
+      embedContainer.style.backgroundColor = "#ffffff";
+      embedContainer.style.filter = "brightness(1.1) contrast(1.1)";
 
       if (cleanupTimeoutRef.current) {
         clearTimeout(cleanupTimeoutRef.current);
