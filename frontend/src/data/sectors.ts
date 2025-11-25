@@ -8,6 +8,7 @@ export interface Sector {
   title: string;
   description: string;
   icon: IconType;
+  subcategories?: string[];
 }
 
 export const sectors: Sector[] = [
@@ -34,5 +35,12 @@ export const sectors: Sector[] = [
     title: "Portal de BI",
     description: "Analise dados e visualize insights em dashboards.",
     icon: BarChart3,
+    subcategories: [
+      "Dashboard Financeiro",
+      "Dashboard Operacional",
+      "Dashboard de Vendas",
+      "Dashboard de RH",
+      "Dashboard de Inventário",
+    ],
   },
 ];

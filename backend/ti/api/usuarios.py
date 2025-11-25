@@ -33,6 +33,15 @@ def listar_usuarios(db: Session = Depends(get_db)):
                 pass
             return []
 
+        def compute_bi_subcategories(u) -> list[str] | None:
+            try:
+                if getattr(u, "_bi_subcategories", None):
+                    raw = json.loads(getattr(u, "_bi_subcategories"))
+                    return [str(x).encode('utf-8', 'ignore').decode('utf-8') if x is not None else "" for x in raw]
+            except Exception:
+                pass
+            return None
+
         # cria tabela se não existir
         try:
             User.__table__.create(bind=engine, checkfirst=True)
@@ -47,6 +56,7 @@ def listar_usuarios(db: Session = Depends(get_db)):
                 if u.bloqueado is None:
                     u.bloqueado = False
                 setores_list = compute_setores(u)
+                bi_subcategories = compute_bi_subcategories(u)
                 rows.append({
                     "id": u.id,
                     "nome": u.nome,
@@ -56,6 +66,7 @@ def listar_usuarios(db: Session = Depends(get_db)):
                     "nivel_acesso": u.nivel_acesso,
                     "setor": setores_list[0] if setores_list else None,
                     "setores": setores_list,
+                    "bi_subcategories": bi_subcategories,
                     "bloqueado": bool(u.bloqueado),
                     "session_revoked_at": u.session_revoked_at.isoformat() if getattr(u, 'session_revoked_at', None) else None,
                 })
@@ -82,6 +93,7 @@ def listar_usuarios(db: Session = Depends(get_db)):
                     "nivel_acesso": r[5],
                     "setor": s,
                     "setores": setores_list,
+                    "bi_subcategories": None,
                     "bloqueado": False,
                 })
             return rows
@@ -232,6 +244,7 @@ def get_usuario(user_id: int, db: Session = Depends(get_db)):
                     "nivel_acesso": row[5],
                     "setor": setores_list[0] if setores_list else None,
                     "setores": setores_list,
+                    "bi_subcategories": None,
                     "bloqueado": bool(row[7]) if len(row) > 7 else False,
                     "session_revoked_at": None,
                 }
@@ -254,6 +267,7 @@ def get_usuario(user_id: int, db: Session = Depends(get_db)):
                         "nivel_acesso": row[5],
                         "setor": setores_list[0] if setores_list else None,
                         "setores": setores_list,
+                        "bi_subcategories": None,
                         "bloqueado": False,
                         "session_revoked_at": None,
                     }
@@ -272,6 +286,15 @@ def get_usuario(user_id: int, db: Session = Depends(get_db)):
                 setores_list = []
         except Exception:
             setores_list = [str(user.setor)] if user.setor else []
+
+        bi_subcategories = None
+        try:
+            if getattr(user, "_bi_subcategories", None):
+                raw = json.loads(user._bi_subcategories)
+                bi_subcategories = [str(x) for x in raw if x is not None]
+        except Exception:
+            pass
+
         return {
             "id": user.id,
             "nome": user.nome,
@@ -281,6 +304,7 @@ def get_usuario(user_id: int, db: Session = Depends(get_db)):
             "nivel_acesso": user.nivel_acesso,
             "setor": setores_list[0] if setores_list else None,
             "setores": setores_list,
+            "bi_subcategories": bi_subcategories,
             "bloqueado": bool(user.bloqueado),
             "session_revoked_at": user.session_revoked_at.isoformat() if getattr(user, 'session_revoked_at', None) else None,
         }

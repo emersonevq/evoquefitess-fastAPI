@@ -18,6 +18,7 @@ class User(Base):
     nivel_acesso: Mapped[str] = mapped_column(String(50), nullable=False)
     setor: Mapped[str | None] = mapped_column(String(255), nullable=True)
     _setores: Mapped[str | None] = mapped_column("_setores", Text, nullable=True)
+    _bi_subcategories: Mapped[str | None] = mapped_column("_bi_subcategories", Text, nullable=True)
     bloqueado: Mapped[bool] = mapped_column(Boolean, default=False)
     data_criacao: Mapped[datetime] = mapped_column(DateTime, default=now_brazil_naive)
     ultimo_acesso: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

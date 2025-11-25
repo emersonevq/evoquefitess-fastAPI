@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Integer, String, DateTime, Boolean, Text
+from sqlalchemy import Integer, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from core.db import Base
 
@@ -18,3 +18,5 @@ class PowerBIDashboard(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     criado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    permissoes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    permissoes_atualizadas_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
