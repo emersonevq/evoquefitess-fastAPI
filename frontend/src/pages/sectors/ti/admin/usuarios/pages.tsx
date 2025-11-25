@@ -894,18 +894,21 @@ export function Permissoes() {
                       Dashboards do Portal de BI
                     </div>
                     <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
-                      {biSubcategories.map((sub) => (
+                      {biSubcategories.map((sub: any) => (
                         <label
-                          key={sub}
+                          key={sub.dashboard_id}
                           className="inline-flex items-center gap-2"
                         >
                           <input
                             type="checkbox"
                             className="h-4 w-4 rounded border-border bg-background"
-                            checked={editBiSubcategories.includes(sub)}
-                            onChange={() => toggleEditBiSubcategory(sub)}
+                            checked={editBiSubcategories.includes(sub.dashboard_id)}
+                            onChange={() => toggleEditBiSubcategory(sub.dashboard_id)}
                           />
-                          {sub}
+                          <div>
+                            <div className="font-medium">{sub.title}</div>
+                            <div className="text-xs text-muted-foreground">ID: {sub.dashboard_id}</div>
+                          </div>
                         </label>
                       ))}
                     </div>
