@@ -23,6 +23,7 @@ class UserOut(BaseModel):
     nivel_acesso: str
     setor: str | None
     setores: Optional[List[str]] | None = None
+    bi_subcategories: Optional[List[str]] | None = None
     bloqueado: bool = False
     session_revoked_at: Optional[str] | None = None
 
