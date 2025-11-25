@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { usuariosMock } from "../mock";
-import { sectors } from "@/data/sectors";
+import { sectors, loadBISubcategories } from "@/data/sectors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
