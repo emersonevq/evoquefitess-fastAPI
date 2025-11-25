@@ -68,6 +68,10 @@ def criar_usuario(db: Session, payload: UserCreate) -> UserCreatedOut:
         setores_json = json.dumps(normalized)
         setor = normalized[0]
 
+    bi_subcategories_json = None
+    if payload.bi_subcategories and len(payload.bi_subcategories) > 0:
+        bi_subcategories_json = json.dumps(payload.bi_subcategories)
+
     novo = User(
         nome=payload.nome,
         sobrenome=payload.sobrenome,
@@ -78,6 +82,7 @@ def criar_usuario(db: Session, payload: UserCreate) -> UserCreatedOut:
         nivel_acesso=payload.nivel_acesso,
         setor=setor,
         _setores=setores_json,
+        _bi_subcategories=bi_subcategories_json,
         bloqueado=payload.bloqueado,
     )
     db.add(novo)
