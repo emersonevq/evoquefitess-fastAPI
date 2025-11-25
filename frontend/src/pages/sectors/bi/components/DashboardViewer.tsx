@@ -430,7 +430,7 @@ export default function DashboardViewer({
           customLayout: {
             displayOption: models.DisplayOption.FitToWidth,
           },
-          background: models.BackgroundType.Transparent,
+          background: models.BackgroundType.Default,
           localeSettings: {
             language: "pt-BR",
             formatLocale: "pt-BR",
