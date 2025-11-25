@@ -167,7 +167,9 @@ export function CriarUsuario() {
           senha: generatedPassword,
           nivel_acesso: level,
           setores: selSectors.length ? selSectors : null,
-          bi_subcategories: selBiSubcategories.length ? selBiSubcategories : null,
+          bi_subcategories: selBiSubcategories.length
+            ? selBiSubcategories
+            : null,
           alterar_senha_primeiro_acesso: forceReset,
         }),
       });
@@ -318,26 +320,31 @@ export function CriarUsuario() {
                 </label>
               ))}
             </div>
-            {isBiSelected && biSector?.subcategories && biSector.subcategories.length > 0 && (
-              <div className="mt-3">
-                <div className="text-xs font-medium text-muted-foreground mb-2">
-                  Dashboards do Portal de BI
+            {isBiSelected &&
+              biSector?.subcategories &&
+              biSector.subcategories.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    Dashboards do Portal de BI
+                  </div>
+                  <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
+                    {biSector.subcategories.map((sub) => (
+                      <label
+                        key={sub}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border bg-background"
+                          checked={selBiSubcategories.includes(sub)}
+                          onChange={() => toggleBiSubcategory(sub)}
+                        />
+                        {sub}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
-                  {biSector.subcategories.map((sub) => (
-                    <label key={sub} className="inline-flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-border bg-background"
-                        checked={selBiSubcategories.includes(sub)}
-                        onChange={() => toggleBiSubcategory(sub)}
-                      />
-                      {sub}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
 
@@ -619,7 +626,9 @@ export function Permissoes() {
         usuario: editUsuario,
         nivel_acesso: editNivel,
         setores: editSetores,
-        bi_subcategories: editBiSubcategories.length ? editBiSubcategories : null,
+        bi_subcategories: editBiSubcategories.length
+          ? editBiSubcategories
+          : null,
         alterar_senha_primeiro_acesso: editForceReset,
       }),
     });
@@ -864,26 +873,31 @@ export function Permissoes() {
                     </label>
                   ))}
                 </div>
-                {isEditBiSelected && biSector?.subcategories && biSector.subcategories.length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-xs font-medium text-muted-foreground mb-2">
-                      Dashboards do Portal de BI
+                {isEditBiSelected &&
+                  biSector?.subcategories &&
+                  biSector.subcategories.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        Dashboards do Portal de BI
+                      </div>
+                      <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
+                        {biSector.subcategories.map((sub) => (
+                          <label
+                            key={sub}
+                            className="inline-flex items-center gap-2"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-border bg-background"
+                              checked={editBiSubcategories.includes(sub)}
+                              onChange={() => toggleEditBiSubcategory(sub)}
+                            />
+                            {sub}
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                    <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
-                      {biSector.subcategories.map((sub) => (
-                        <label key={sub} className="inline-flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-border bg-background"
-                            checked={editBiSubcategories.includes(sub)}
-                            onChange={() => toggleEditBiSubcategory(sub)}
-                          />
-                          {sub}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
             <label className="inline-flex items-center gap-2 text-sm">
