@@ -661,22 +661,17 @@ export function Permissoes() {
       setEditing(null);
       load();
 
-      // Dispatch event immediately to notify other listeners
+      // Dispatch event to notify other listeners
+      // For the user being edited, only dispatch once to avoid refresh loops
+      console.log("[ADMIN] Dispatching permission update event for user", editing.id);
+      window.dispatchEvent(
+        new CustomEvent("user:updated", {
+          detail: { user_id: editing.id, type: "permissions_changed" },
+        }),
+      );
+
+      // For other users' lists, dispatch users:changed
       window.dispatchEvent(new CustomEvent("users:changed"));
-
-      // Force a synchronous refresh with a slight delay to ensure backend processed
-      setTimeout(() => {
-        console.log("[ADMIN] Forcing auth:refresh event for user", editing.id);
-        // Emit the custom event that listeners in useAuth are waiting for
-        window.dispatchEvent(new CustomEvent("auth:refresh"));
-
-        // Also emit a more specific event with the updated user info
-        window.dispatchEvent(
-          new CustomEvent("user:updated", {
-            detail: { user_id: editing.id, type: "permissions_changed" },
-          }),
-        );
-      }, 100);
     } else {
       const t = await res.json().catch(() => ({}) as any);
       console.error("[ADMIN] Save failed with status", res.status, "error:", t);
