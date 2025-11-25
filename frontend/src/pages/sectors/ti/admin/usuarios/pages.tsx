@@ -621,24 +621,33 @@ export function Permissoes() {
 
   const saveEdit = async () => {
     if (!editing) return;
+    const payload = {
+      nome: editNome,
+      sobrenome: editSobrenome,
+      email: editEmail,
+      usuario: editUsuario,
+      nivel_acesso: editNivel,
+      setores: editSetores,
+      bi_subcategories: editBiSubcategories.length
+        ? editBiSubcategories
+        : null,
+      alterar_senha_primeiro_acesso: editForceReset,
+    };
+
+    console.log("[ADMIN] Salvando usuário", editing.id, "com payload:", payload);
+
     const res = await fetch(`/api/usuarios/${editing.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nome: editNome,
-        sobrenome: editSobrenome,
-        email: editEmail,
-        usuario: editUsuario,
-        nivel_acesso: editNivel,
-        setores: editSetores,
-        bi_subcategories: editBiSubcategories.length
-          ? editBiSubcategories
-          : null,
-        alterar_senha_primeiro_acesso: editForceReset,
-      }),
+      body: JSON.stringify(payload),
     });
+
+    console.log("[ADMIN] Response status:", res.status);
+
     if (res.ok) {
-      console.log("[ADMIN] User updated successfully, triggering refresh");
+      const responseData = await res.json();
+      console.log("[ADMIN] User updated successfully, response:", responseData);
+      console.log("[ADMIN] bi_subcategories saved as:", responseData.bi_subcategories);
       setEditing(null);
       load();
 
@@ -660,6 +669,7 @@ export function Permissoes() {
       }, 100);
     } else {
       const t = await res.json().catch(() => ({}) as any);
+      console.error("[ADMIN] Save failed with status", res.status, "error:", t);
       alert((t && (t.detail || t.message)) || "Falha ao salvar");
     }
   };
