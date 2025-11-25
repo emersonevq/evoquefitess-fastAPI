@@ -547,13 +547,28 @@ export function Permissoes() {
   const [editUsuario, setEditUsuario] = useState("");
   const [editNivel, setEditNivel] = useState("Funcionário");
   const [editSetores, setEditSetores] = useState<string[]>([]);
+  const [editBiSubcategories, setEditBiSubcategories] = useState<string[]>([]);
   const [editForceReset, setEditForceReset] = useState<boolean>(false);
 
   const allSectors = useMemo(() => sectors.map((s) => s.title), []);
+  const biSector = useMemo(() => sectors.find((s) => s.slug === "bi"), []);
+  const isEditBiSelected = editSetores.includes(normalize("Portal de BI"));
+
   const toggleEditSector = (name: string) => {
     const key = normalize(name);
     setEditSetores((prev) =>
       prev.includes(key) ? prev.filter((n) => n !== key) : [...prev, key],
+    );
+    if (name === "Portal de BI" && !isEditBiSelected) {
+      setEditBiSubcategories([]);
+    }
+  };
+
+  const toggleEditBiSubcategory = (subcategory: string) => {
+    setEditBiSubcategories((prev) =>
+      prev.includes(subcategory)
+        ? prev.filter((s) => s !== subcategory)
+        : [...prev, subcategory],
     );
   };
 
@@ -588,6 +603,7 @@ export function Permissoes() {
     } else {
       setEditSetores(u.setor ? [normalize(u.setor)] : []);
     }
+    setEditBiSubcategories((u as any).bi_subcategories || []);
     setEditForceReset(false);
   };
 
@@ -603,6 +619,7 @@ export function Permissoes() {
         usuario: editUsuario,
         nivel_acesso: editNivel,
         setores: editSetores,
+        bi_subcategories: editBiSubcategories.length ? editBiSubcategories : null,
         alterar_senha_primeiro_acesso: editForceReset,
       }),
     });
@@ -831,7 +848,7 @@ export function Permissoes() {
               <div className="grid gap-2">
                 <Label>Setor(es)</Label>
                 <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-2 mb-2">
-                  ℹ�� As permissões marcadas abaixo são as permissões atuais do
+                  ℹ️ As permissões marcadas abaixo são as permissões atuais do
                   usuário
                 </div>
                 <div className="rounded-md border border-border/60 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
