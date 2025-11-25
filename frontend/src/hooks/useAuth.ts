@@ -7,6 +7,7 @@ interface AuthUser {
   name: string;
   nivel_acesso?: string;
   setores?: string[];
+  bi_subcategories?: string[] | null;
   alterar_senha_primeiro_acesso?: boolean;
   loginTime: number;
 }
