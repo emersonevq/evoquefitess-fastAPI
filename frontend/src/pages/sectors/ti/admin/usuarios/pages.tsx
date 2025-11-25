@@ -325,15 +325,13 @@ export function CriarUsuario() {
                 </label>
               ))}
             </div>
-            {isBiSelected &&
-              biSector?.subcategories &&
-              biSector.subcategories.length > 0 && (
+            {isBiSelected && biSubcategories.length > 0 && (
                 <div className="mt-3">
                   <div className="text-xs font-medium text-muted-foreground mb-2">
                     Dashboards do Portal de BI
                   </div>
                   <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
-                    {biSector.subcategories.map((sub) => (
+                    {biSubcategories.map((sub) => (
                       <label
                         key={sub}
                         className="inline-flex items-center gap-2"
