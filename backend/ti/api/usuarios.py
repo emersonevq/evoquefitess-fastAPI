@@ -228,6 +228,14 @@ def atualizar_usuario(user_id: int, payload: dict, db: Session = Depends(get_db)
         except Exception:
             setores_list = [str(updated.setor)] if getattr(updated, "setor", None) else []
 
+        try:
+            bi_subcategories_list = None
+            if getattr(updated, "_bi_subcategories", None):
+                raw = json.loads(updated._bi_subcategories)
+                bi_subcategories_list = [str(x) if x is not None else "" for x in raw]
+        except Exception:
+            bi_subcategories_list = None
+
         return {
             "id": updated.id,
             "nome": updated.nome,
@@ -237,6 +245,7 @@ def atualizar_usuario(user_id: int, payload: dict, db: Session = Depends(get_db)
             "nivel_acesso": updated.nivel_acesso,
             "setor": setores_list[0] if setores_list else None,
             "setores": setores_list,
+            "bi_subcategories": bi_subcategories_list,
             "bloqueado": bool(updated.bloqueado),
             "session_revoked_at": updated.session_revoked_at.isoformat() if getattr(updated, 'session_revoked_at', None) else None,
         }
