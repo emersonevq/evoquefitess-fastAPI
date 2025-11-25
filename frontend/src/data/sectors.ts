@@ -38,9 +38,16 @@ const baseSectors: Sector[] = [
   },
 ];
 
-let cachedSubcategories: string[] | null = null;
+export interface BISubcategory {
+  dashboard_id: string;
+  title: string;
+  category: string;
+  category_name: string;
+}
 
-export async function loadBISubcategories(): Promise<string[]> {
+let cachedSubcategories: BISubcategory[] | null = null;
+
+export async function loadBISubcategories(): Promise<BISubcategory[]> {
   if (cachedSubcategories) {
     return cachedSubcategories;
   }
@@ -53,6 +60,7 @@ export async function loadBISubcategories(): Promise<string[]> {
     }
     const data = await response.json();
     cachedSubcategories = data.subcategories || [];
+    console.log("[SECTORS] Loaded BI subcategories:", cachedSubcategories);
     return cachedSubcategories;
   } catch (error) {
     console.error("Error loading BI subcategories:", error);

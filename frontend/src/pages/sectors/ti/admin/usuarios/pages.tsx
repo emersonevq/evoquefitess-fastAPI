@@ -621,24 +621,39 @@ export function Permissoes() {
 
   const saveEdit = async () => {
     if (!editing) return;
+    const payload = {
+      nome: editNome,
+      sobrenome: editSobrenome,
+      email: editEmail,
+      usuario: editUsuario,
+      nivel_acesso: editNivel,
+      setores: editSetores,
+      bi_subcategories: editBiSubcategories.length ? editBiSubcategories : null,
+      alterar_senha_primeiro_acesso: editForceReset,
+    };
+
+    console.log(
+      "[ADMIN] Salvando usuário",
+      editing.id,
+      "com payload:",
+      payload,
+    );
+
     const res = await fetch(`/api/usuarios/${editing.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nome: editNome,
-        sobrenome: editSobrenome,
-        email: editEmail,
-        usuario: editUsuario,
-        nivel_acesso: editNivel,
-        setores: editSetores,
-        bi_subcategories: editBiSubcategories.length
-          ? editBiSubcategories
-          : null,
-        alterar_senha_primeiro_acesso: editForceReset,
-      }),
+      body: JSON.stringify(payload),
     });
+
+    console.log("[ADMIN] Response status:", res.status);
+
     if (res.ok) {
-      console.log("[ADMIN] User updated successfully, triggering refresh");
+      const responseData = await res.json();
+      console.log("[ADMIN] User updated successfully, response:", responseData);
+      console.log(
+        "[ADMIN] bi_subcategories saved as:",
+        responseData.bi_subcategories,
+      );
       setEditing(null);
       load();
 
@@ -660,6 +675,7 @@ export function Permissoes() {
       }, 100);
     } else {
       const t = await res.json().catch(() => ({}) as any);
+      console.error("[ADMIN] Save failed with status", res.status, "error:", t);
       alert((t && (t.detail || t.message)) || "Falha ao salvar");
     }
   };
@@ -884,18 +900,27 @@ export function Permissoes() {
                       Dashboards do Portal de BI
                     </div>
                     <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
-                      {biSubcategories.map((sub) => (
+                      {biSubcategories.map((sub: any) => (
                         <label
-                          key={sub}
+                          key={sub.dashboard_id}
                           className="inline-flex items-center gap-2"
                         >
                           <input
                             type="checkbox"
                             className="h-4 w-4 rounded border-border bg-background"
-                            checked={editBiSubcategories.includes(sub)}
-                            onChange={() => toggleEditBiSubcategory(sub)}
+                            checked={editBiSubcategories.includes(
+                              sub.dashboard_id,
+                            )}
+                            onChange={() =>
+                              toggleEditBiSubcategory(sub.dashboard_id)
+                            }
                           />
-                          {sub}
+                          <div>
+                            <div className="font-medium">{sub.title}</div>
+                            <div className="text-xs text-muted-foreground">
+                              ID: {sub.dashboard_id}
+                            </div>
+                          </div>
                         </label>
                       ))}
                     </div>

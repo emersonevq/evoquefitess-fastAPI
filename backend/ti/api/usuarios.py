@@ -186,8 +186,17 @@ def atualizar_usuario(user_id: int, payload: dict, db: Session = Depends(get_db)
     try:
         import json
         print(f"[API] atualizar_usuario called for user_id={user_id}, payload keys={list(payload.keys())}")
+        print(f"[API] Full payload: {json.dumps(payload, default=str)}")
+        if "bi_subcategories" in payload:
+            print(f"[API] bi_subcategories in payload: {payload['bi_subcategories']}")
+
         updated = update_user(db, user_id, payload)
         print(f"[API] User updated successfully, new setores={getattr(updated, '_setores', 'N/A')}")
+        print(f"[API] User updated successfully, new _bi_subcategories={getattr(updated, '_bi_subcategories', 'N/A')}")
+
+        # Verify what was actually saved to the database
+        db.refresh(updated)
+        print(f"[API] After refresh from DB, _bi_subcategories={getattr(updated, '_bi_subcategories', 'N/A')}")
 
         # Notify the specific user their permissions/profile changed
         try:
@@ -257,6 +266,37 @@ def atualizar_usuario(user_id: int, payload: dict, db: Session = Depends(get_db)
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar: {e}")
+
+
+@router.get("/{user_id}/debug-bi")
+def debug_user_bi(user_id: int, db: Session = Depends(get_db)):
+    """Debug endpoint to check what's actually in the database for a user's BI permissions"""
+    try:
+        from ..models import User
+        User.__table__.create(bind=engine, checkfirst=True)
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"error": f"User {user_id} not found"}
+
+        import json
+        bi_raw = getattr(user, "_bi_subcategories", None)
+        bi_parsed = None
+        try:
+            if bi_raw:
+                bi_parsed = json.loads(bi_raw)
+        except Exception as e:
+            pass
+
+        return {
+            "user_id": user.id,
+            "user_name": f"{user.nome} {user.sobrenome}",
+            "_bi_subcategories_raw": bi_raw,
+            "_bi_subcategories_parsed": bi_parsed,
+            "note": "Check the _bi_subcategories_raw field in database"
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @router.get("/{user_id}", response_model=UserOut)

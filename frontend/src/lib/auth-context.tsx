@@ -8,6 +8,7 @@ interface AuthContextType {
     name: string;
     nivel_acesso?: string;
     setores?: string[];
+    bi_subcategories?: string[] | null;
     loginTime: number;
   } | null;
   isAuthenticated: boolean;

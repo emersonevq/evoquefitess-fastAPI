@@ -7,6 +7,7 @@ interface AuthUser {
   name: string;
   nivel_acesso?: string;
   setores?: string[];
+  bi_subcategories?: string[] | null;
   alterar_senha_primeiro_acesso?: boolean;
   loginTime: number;
 }
@@ -51,6 +52,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthRecord & Partial<AuthUser>;
@@ -61,6 +63,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
           } as AuthUser;
         }
@@ -74,6 +77,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthUser & Partial<AuthRecord>;
@@ -84,6 +88,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
           } as AuthUser;
         }
@@ -112,6 +117,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthRecord & Partial<AuthUser>;
@@ -122,6 +128,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
           } as AuthUser;
         }
@@ -135,6 +142,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
             id,
           } = data as AuthUser & Partial<AuthRecord>;
@@ -145,6 +153,7 @@ function readFromStorage(): AuthUser | null {
             loginTime,
             nivel_acesso,
             setores,
+            bi_subcategories,
             alterar_senha_primeiro_acesso,
           } as AuthUser;
         }
@@ -347,6 +356,9 @@ export function useAuth() {
           name: `${data.nome} ${data.sobrenome}`,
           nivel_acesso: data.nivel_acesso,
           setores: newSetores,
+          bi_subcategories: Array.isArray(data.bi_subcategories)
+            ? data.bi_subcategories
+            : null,
           loginTime: now,
           alterar_senha_primeiro_acesso: !!data.alterar_senha_primeiro_acesso,
         };
@@ -492,6 +504,9 @@ export function useAuth() {
         name: `${data.nome} ${data.sobrenome}`,
         nivel_acesso: data.nivel_acesso,
         setores: Array.isArray(data.setores) ? data.setores : [],
+        bi_subcategories: Array.isArray(data.bi_subcategories)
+          ? data.bi_subcategories
+          : null,
         loginTime: now,
         // include flag
         alterar_senha_primeiro_acesso: !!data.alterar_senha_primeiro_acesso,
