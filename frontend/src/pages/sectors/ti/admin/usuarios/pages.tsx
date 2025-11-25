@@ -559,6 +559,7 @@ export function Permissoes() {
   const [editSetores, setEditSetores] = useState<string[]>([]);
   const [editBiSubcategories, setEditBiSubcategories] = useState<string[]>([]);
   const [editForceReset, setEditForceReset] = useState<boolean>(false);
+  const [biSubcategories, setBiSubcategories] = useState<string[]>([]);
 
   const allSectors = useMemo(() => sectors.map((s) => s.title), []);
   const biSector = useMemo(() => sectors.find((s) => s.slug === "bi"), []);
@@ -592,6 +593,10 @@ export function Permissoes() {
       .catch(() => setUsers([]))
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    loadBISubcategories().then(setBiSubcategories);
+  }, []);
 
   useEffect(() => {
     load();
