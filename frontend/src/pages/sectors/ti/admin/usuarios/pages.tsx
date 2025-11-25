@@ -46,7 +46,7 @@ export function CriarUsuario() {
   const [username, setUsername] = useState("");
   const [level, setLevel] = useState("Funcionário");
   const [selSectors, setSelSectors] = useState<string[]>([]);
-  const [selBiSubcategories, setSelBiSubcategories] = useState<string[]>([]);
+  const [selBiSubcategories, setSelBiSubcategories] = useState<string>("");
   const [forceReset, setForceReset] = useState(true);
 
   const [emailTaken, setEmailTaken] = useState<boolean | null>(null);
@@ -84,16 +84,12 @@ export function CriarUsuario() {
       prev.includes(key) ? prev.filter((n) => n !== key) : [...prev, key],
     );
     if (name === "Portal de BI" && !isBiSelected) {
-      setSelBiSubcategories([]);
+      setSelBiSubcategories("");
     }
   };
 
-  const toggleBiSubcategory = (subcategory: string) => {
-    setSelBiSubcategories((prev) =>
-      prev.includes(subcategory)
-        ? prev.filter((s) => s !== subcategory)
-        : [...prev, subcategory],
-    );
+  const setBiSubcategory = (subcategory: string) => {
+    setSelBiSubcategories(subcategory);
   };
 
   const checkAvailability = async (
@@ -172,9 +168,7 @@ export function CriarUsuario() {
           senha: generatedPassword,
           nivel_acesso: level,
           setores: selSectors.length ? selSectors : null,
-          bi_subcategories: selBiSubcategories.length
-            ? selBiSubcategories
-            : null,
+          bi_subcategories: selBiSubcategories ? [selBiSubcategories] : null,
           alterar_senha_primeiro_acesso: forceReset,
         }),
       });
@@ -200,7 +194,7 @@ export function CriarUsuario() {
       setUsername("");
       setLevel("Funcionário");
       setSelSectors([]);
-      setSelBiSubcategories([]);
+      setSelBiSubcategories("");
       setForceReset(true);
       setEmailTaken(null);
       setUsernameTaken(null);
@@ -328,18 +322,25 @@ export function CriarUsuario() {
             {isBiSelected && biSubcategories.length > 0 && (
               <div className="mt-3">
                 <div className="text-xs font-medium text-muted-foreground mb-2">
-                  Dashboards do Portal de BI
+                  Selecione um dashboard do Portal de BI
                 </div>
-                <div className="rounded-md border border-border/40 p-3 grid grid-cols-1 gap-2 text-sm bg-muted/30">
-                  {biSubcategories.map((sub) => (
-                    <label key={sub} className="inline-flex items-center gap-2">
+                <div className="rounded-md border border-border/40 p-3 space-y-2 text-sm bg-muted/30">
+                  {biSubcategories.map((sub: any) => (
+                    <label key={sub.dashboard_id} className="inline-flex items-center gap-2 cursor-pointer">
                       <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-border bg-background"
-                        checked={selBiSubcategories.includes(sub)}
-                        onChange={() => toggleBiSubcategory(sub)}
+                        type="radio"
+                        name="bi-dashboard-create"
+                        value={sub.dashboard_id}
+                        checked={selBiSubcategories === sub.dashboard_id}
+                        onChange={() => setBiSubcategory(sub.dashboard_id)}
+                        className="h-4 w-4 rounded-full border-border bg-background"
                       />
-                      {sub}
+                      <div>
+                        <div className="font-medium">{sub.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {sub.category_name}
+                        </div>
+                      </div>
                     </label>
                   ))}
                 </div>
