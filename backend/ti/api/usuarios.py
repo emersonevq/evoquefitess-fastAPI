@@ -163,6 +163,7 @@ def listar_bloqueados(db: Session = Depends(get_db)):
 @router.put("/{user_id}", response_model=UserOut)
 def atualizar_usuario(user_id: int, payload: dict, db: Session = Depends(get_db)):
     try:
+        import json
         print(f"[API] atualizar_usuario called for user_id={user_id}, payload keys={list(payload.keys())}")
         updated = update_user(db, user_id, payload)
         print(f"[API] User updated successfully, new setores={getattr(updated, '_setores', 'N/A')}")
@@ -194,7 +195,30 @@ def atualizar_usuario(user_id: int, payload: dict, db: Session = Depends(get_db)
             import traceback
             traceback.print_exc()
 
-        return updated
+        # Convert to dict with datetime serialization
+        try:
+            if getattr(updated, "_setores", None):
+                raw = json.loads(updated._setores)
+                setores_list = [str(x) for x in raw if x is not None]
+            elif getattr(updated, "setor", None):
+                setores_list = [str(updated.setor)]
+            else:
+                setores_list = []
+        except Exception:
+            setores_list = [str(updated.setor)] if getattr(updated, "setor", None) else []
+
+        return {
+            "id": updated.id,
+            "nome": updated.nome,
+            "sobrenome": updated.sobrenome,
+            "usuario": updated.usuario,
+            "email": updated.email,
+            "nivel_acesso": updated.nivel_acesso,
+            "setor": setores_list[0] if setores_list else None,
+            "setores": setores_list,
+            "bloqueado": bool(updated.bloqueado),
+            "session_revoked_at": updated.session_revoked_at.isoformat() if getattr(updated, 'session_revoked_at', None) else None,
+        }
     except ValueError as e:
         print(f"[API] ValueError: {e}")
         raise HTTPException(status_code=400, detail=str(e))
