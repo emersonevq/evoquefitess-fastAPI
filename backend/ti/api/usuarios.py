@@ -243,6 +243,7 @@ def get_usuario(user_id: int, db: Session = Depends(get_db)):
                     "nivel_acesso": row[5],
                     "setor": setores_list[0] if setores_list else None,
                     "setores": setores_list,
+                    "bi_subcategories": None,
                     "bloqueado": bool(row[7]) if len(row) > 7 else False,
                     "session_revoked_at": None,
                 }
