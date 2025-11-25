@@ -240,14 +240,6 @@ def get_usuario(user_id: int, db: Session = Depends(get_db)):
         except Exception:
             setores_list = [str(user.setor)] if user.setor else []
 
-        bi_subcategories = None
-        try:
-            if getattr(user, "_bi_subcategories", None):
-                raw = json.loads(user._bi_subcategories)
-                bi_subcategories = [str(x) for x in raw if x is not None]
-        except Exception:
-            pass
-
         return {
             "id": user.id,
             "nome": user.nome,
@@ -257,7 +249,6 @@ def get_usuario(user_id: int, db: Session = Depends(get_db)):
             "nivel_acesso": user.nivel_acesso,
             "setor": setores_list[0] if setores_list else None,
             "setores": setores_list,
-            "bi_subcategories": bi_subcategories,
             "bloqueado": bool(user.bloqueado),
             "session_revoked_at": user.session_revoked_at.isoformat() if getattr(user, 'session_revoked_at', None) else None,
         }
