@@ -613,83 +613,109 @@ class MetricsCalculator:
 
     @staticmethod
     def get_performance_metrics(db: Session) -> dict:
-        """Retorna métricas de performance (últimos 30 dias)"""
-        agora = now_brazil_naive()
-        trinta_dias_atras = agora - timedelta(days=30)
+        """Retorna métricas de performance (últimos 30 dias) - CORRIGIDO"""
+        try:
+            from ti.services.sla import SLACalculator
 
-        chamados_30dias = db.query(Chamado).filter(
-            Chamado.data_abertura >= trinta_dias_atras
-        ).all()
+            agora = now_brazil_naive()
+            trinta_dias_atras = agora - timedelta(days=30)
 
-        # Tempo médio de resolução
-        tempos_resolucao = []
-        for chamado in chamados_30dias:
-            if chamado.data_conclusao and chamado.data_abertura:
-                delta = chamado.data_conclusao - chamado.data_abertura
-                horas = delta.total_seconds() / 3600
-                tempos_resolucao.append(horas)
+            # Busca chamados dos últimos 30 dias
+            chamados_30dias = db.query(Chamado).filter(
+                and_(
+                    Chamado.data_abertura >= trinta_dias_atras,
+                    Chamado.status != "Cancelado"
+                )
+            ).all()
 
-        tempo_resolucao_medio = sum(tempos_resolucao) / len(tempos_resolucao) if tempos_resolucao else 0
-        horas = int(tempo_resolucao_medio)
-        minutos = int((tempo_resolucao_medio - horas) * 60)
-        tempo_resolucao_str = f"{horas}h {minutos}m" if minutos > 0 else f"{horas}h" if horas > 0 else "—"
+            # ===== TEMPO MÉDIO DE RESOLUÇÃO (horas de negócio) =====
+            tempos_resolucao = []
+            for chamado in chamados_30dias:
+                if chamado.data_conclusao and chamado.data_abertura:
+                    # Usa horas de NEGÓCIO (não clock time)
+                    horas = SLACalculator.calculate_business_hours(
+                        chamado.data_abertura,
+                        chamado.data_conclusao,
+                        db
+                    )
+                    tempos_resolucao.append(horas)
 
-        # Tempo médio de PRIMEIRA resposta usando historico_status
-        tempos_primeira_resposta = []
+            tempo_resolucao_medio = sum(tempos_resolucao) / len(tempos_resolucao) if tempos_resolucao else 0
+            horas = int(tempo_resolucao_medio)
+            minutos = int((tempo_resolucao_medio - horas) * 60)
+            tempo_resolucao_str = f"{horas}h {minutos}m" if minutos > 0 else f"{horas}h" if horas > 0 else "—"
 
-        # Subquery: pega apenas a PRIMEIRA mudança de status por chamado nos últimos 30 dias
-        subquery = db.query(
-            HistoricoStatus.chamado_id,
-            func.min(HistoricoStatus.created_at).label('primeira_resposta_at')
-        ).filter(
-            and_(
-                HistoricoStatus.created_at >= trinta_dias_atras,
-                HistoricoStatus.status.in_(["Em Atendimento", "Em análise", "Em andamento"])
+            # ===== TEMPO MÉDIO DE PRIMEIRA RESPOSTA =====
+            # Usa Chamado.data_primeira_resposta (fonte confiável)
+            tempos_primeira_resposta = []
+            for chamado in chamados_30dias:
+                if chamado.data_primeira_resposta and chamado.data_abertura:
+                    # Usa horas de NEGÓCIO
+                    horas = SLACalculator.calculate_business_hours(
+                        chamado.data_abertura,
+                        chamado.data_primeira_resposta,
+                        db
+                    )
+                    # Filtro de sanidade: máximo 72h
+                    if 0 <= horas <= 72:
+                        tempos_primeira_resposta.append(horas)
+
+            tempo_primeira_resposta_medio = sum(tempos_primeira_resposta) / len(tempos_primeira_resposta) if tempos_primeira_resposta else 0
+
+            # Formata corretamente: horas e minutos
+            if tempo_primeira_resposta_medio > 0:
+                hrs = int(tempo_primeira_resposta_medio)
+                mins = int((tempo_primeira_resposta_medio - hrs) * 60)
+                tempo_primeira_resposta_str = f"{hrs}h {mins}m" if mins > 0 else f"{hrs}h"
+            else:
+                tempo_primeira_resposta_str = "—"
+
+            # ===== TAXA DE REABERTURAS =====
+            # Calcula % de chamados que foram reaberlos (status != Concluído em algum momento)
+            # Para simplificar: verifica chamados com múltiplas transições
+            chamados_reaberlos = 0
+            for chamado in chamados_30dias:
+                historicos = db.query(HistoricoStatus).filter(
+                    HistoricoStatus.chamado_id == chamado.id
+                ).count()
+                # Se tem mais de 5 históricos, provavelmente foi reaberto
+                if historicos > 5:
+                    chamados_reaberlos += 1
+
+            total_com_historico = sum(
+                1 for c in chamados_30dias
+                if db.query(HistoricoStatus).filter(
+                    HistoricoStatus.chamado_id == c.id
+                ).count() > 0
             )
-        ).group_by(HistoricoStatus.chamado_id).subquery()
+            taxa_reaberturas = int((chamados_reaberlos / total_com_historico * 100)) if total_com_historico > 0 else 0
 
-        # Busca os históricos da primeira resposta + dados do chamado (JOIN direto)
-        resultados = db.query(
-            HistoricoStatus.data_inicio,
-            Chamado.data_abertura
-        ).join(
-            subquery,
-            and_(
-                HistoricoStatus.chamado_id == subquery.c.chamado_id,
-                HistoricoStatus.created_at == subquery.c.primeira_resposta_at
-            )
-        ).join(
-            Chamado,
-            Chamado.id == HistoricoStatus.chamado_id
-        ).all()
+            # ===== CHAMADOS EM BACKLOG =====
+            # Chamados que estão aguardando (congelados)
+            chamados_backlog = db.query(Chamado).filter(
+                and_(
+                    Chamado.status.in_(["Aguardando", "Em análise"]),
+                    Chamado.status != "Cancelado"
+                )
+            ).count()
 
-        for data_inicio, data_abertura in resultados:
-            if data_inicio and data_abertura:
-                delta = data_inicio - data_abertura
-                minutos_delta = delta.total_seconds() / 60
-                # Filtro de sanidade: máximo 72h (4320 minutos)
-                if 0 <= minutos_delta <= 4320:
-                    tempos_primeira_resposta.append(minutos_delta)
+            return {
+                "tempo_resolucao_medio": tempo_resolucao_str,
+                "primeira_resposta_media": tempo_primeira_resposta_str,
+                "taxa_reaberturas": f"{taxa_reaberturas}%",
+                "chamados_backlog": chamados_backlog
+            }
 
-        tempo_primeira_resposta_medio = sum(tempos_primeira_resposta) / len(tempos_primeira_resposta) if tempos_primeira_resposta else 0
-        tempo_primeira_resposta_str = f"{int(tempo_primeira_resposta_medio)}m" if tempo_primeira_resposta_medio > 0 else "—"
-
-        # Taxa de reaberturas
-        # Nota: O modelo Chamado não possui atributos de rastreamento de reaberturas
-        # Esta métrica seria calculada através de análise de histórico de status se necessário
-        taxa_reaberturas = 0
-
-        # Chamados em backlog (status Aguardando ou Em análise ou Aberto)
-        chamados_backlog = db.query(Chamado).filter(
-            Chamado.status.in_(["Aguardando", "Em análise", "Aberto"])
-        ).count()
-
-        return {
-            "tempo_resolucao_medio": tempo_resolucao_str,
-            "primeira_resposta_media": tempo_primeira_resposta_str,
-            "taxa_reaberturas": f"{taxa_reaberturas}%",
-            "chamados_backlog": chamados_backlog
-        }
+        except Exception as e:
+            print(f"Erro ao calcular métricas de performance: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "tempo_resolucao_medio": "—",
+                "primeira_resposta_media": "—",
+                "taxa_reaberturas": "0%",
+                "chamados_backlog": 0
+            }
 
     @staticmethod
     def debug_tempo_resposta(db: Session, periodo: str = "mes"):
