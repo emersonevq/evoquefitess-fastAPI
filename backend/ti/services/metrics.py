@@ -89,21 +89,86 @@ class MetricsCalculator:
             return "—"
 
     @staticmethod
+    def get_tempo_medio_resposta_mes(db: Session) -> tuple[str, int]:
+        """Calcula tempo médio de resposta deste mês e retorna também a contagem de chamados abertos neste mês"""
+        agora = now_brazil_naive()
+        # Primeiro dia do mês atual
+        mes_inicio = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        try:
+            # Busca todos os chamados abertos neste mês
+            chamados_mes = db.query(Chamado).filter(
+                and_(
+                    Chamado.data_abertura >= mes_inicio,
+                    Chamado.data_abertura <= agora,
+                    Chamado.status != "Cancelado"
+                )
+            ).all()
+
+            total_chamados_mes = len(chamados_mes)
+
+            if not chamados_mes:
+                return "—", 0
+
+            # Busca todos os historicos de primeira resposta deste mês
+            historicos_primeira_resposta = db.query(HistoricoStatus).filter(
+                and_(
+                    HistoricoStatus.created_at >= mes_inicio,
+                    HistoricoStatus.created_at <= agora,
+                    HistoricoStatus.status.in_(["Em Atendimento", "Em análise", "Em andamento"])
+                )
+            ).all()
+
+            if not historicos_primeira_resposta:
+                return "—", total_chamados_mes
+
+            tempos = []
+            for historico in historicos_primeira_resposta:
+                try:
+                    chamado = db.query(Chamado).filter(
+                        Chamado.id == historico.chamado_id
+                    ).first()
+
+                    if chamado and chamado.data_abertura and historico.data_inicio:
+                        delta = historico.data_inicio - chamado.data_abertura
+                        horas = delta.total_seconds() / 3600
+                        if horas >= 0:  # Apenas valores positivos
+                            tempos.append(horas)
+                except Exception:
+                    continue
+
+            if not tempos:
+                return "—", total_chamados_mes
+
+            media_horas = sum(tempos) / len(tempos)
+
+            if media_horas < 1:
+                minutos = int(media_horas * 60)
+                return f"{minutos}m", total_chamados_mes
+            else:
+                horas = int(media_horas)
+                minutos = int((media_horas - horas) * 60)
+                return (f"{horas}h {minutos}m" if minutos > 0 else f"{horas}h"), total_chamados_mes
+        except Exception as e:
+            print(f"Erro ao calcular tempo de resposta do mês: {e}")
+            return "—", 0
+
+    @staticmethod
     def get_sla_compliance_24h(db: Session) -> int:
         """Calcula percentual de SLA cumprido nas últimas 24h"""
         agora = now_brazil_naive()
         ontem = agora - timedelta(hours=24)
-        
+
         historicos = db.query(HistoricoSLA).filter(
             HistoricoSLA.criado_em >= ontem
         ).all()
-        
+
         if not historicos:
             return 0
-        
+
         em_dia = sum(1 for h in historicos if h.status_sla == "ok")
         percentual = int((em_dia / len(historicos)) * 100)
-        
+
         return percentual
 
     @staticmethod
