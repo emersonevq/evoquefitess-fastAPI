@@ -220,6 +220,58 @@ class MetricsCalculator:
             return 0
 
     @staticmethod
+    def get_sla_compliance_mes(db: Session) -> int:
+        """Calcula percentual de SLA cumprido para todos os chamados abertos neste mês (concluídos e ativos)"""
+        try:
+            from ti.services.sla import SLACalculator
+
+            agora = now_brazil_naive()
+            mes_inicio = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+            # Busca TODOS os chamados abertos neste mês (não cancelados)
+            chamados_mes = db.query(Chamado).filter(
+                and_(
+                    Chamado.data_abertura >= mes_inicio,
+                    Chamado.data_abertura <= agora,
+                    Chamado.status != "Cancelado"
+                )
+            ).all()
+
+            if not chamados_mes:
+                return 0
+
+            dentro_sla = 0
+            fora_sla = 0
+
+            for chamado in chamados_mes:
+                try:
+                    sla_status = SLACalculator.get_sla_status(db, chamado)
+                    status_resolucao = sla_status.get("tempo_resolucao_status")
+
+                    # Conta como "dentro" se: ok, em_andamento ou congelado
+                    # Conta como "fora" se: vencido
+                    if status_resolucao in ("ok", "em_andamento", "congelado"):
+                        dentro_sla += 1
+                    elif status_resolucao == "vencido":
+                        fora_sla += 1
+                except Exception as e:
+                    print(f"Erro ao calcular SLA do chamado {chamado.id}: {e}")
+                    continue
+
+            total = dentro_sla + fora_sla
+            if total == 0:
+                return 0
+
+            percentual = int((dentro_sla / total) * 100)
+            return percentual
+
+        except Exception as e:
+            print(f"Erro ao calcular SLA compliance do mês: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
+
+    @staticmethod
     def get_chamados_hoje_count(db: Session) -> int:
         """Retorna quantidade de chamados de hoje"""
         return MetricsCalculator.get_chamados_abertos_hoje(db)
