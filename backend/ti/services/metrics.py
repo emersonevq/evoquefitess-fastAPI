@@ -348,8 +348,9 @@ class MetricsCalculator:
                     # Define data final para cálculo
                     data_final = chamado.data_conclusao if chamado.data_conclusao else agora
 
-                    # Calcula tempo de resolução em horas de negócio
-                    tempo_resolucao_horas = SLACalculator.calculate_business_hours(
+                    # Calcula tempo de resolução em horas de negócio DESCONTANDO "Em análise"
+                    tempo_resolucao_horas = SLACalculator.calculate_business_hours_excluding_paused(
+                        chamado.id,
                         chamado.data_abertura,
                         data_final,
                         db
