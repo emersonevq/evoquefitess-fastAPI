@@ -3,7 +3,7 @@ Script para criar índices de performance nas tabelas principais.
 Esses índices melhoram a velocidade das queries de métricas e SLA.
 """
 from sqlalchemy import text, inspect
-from ...core.db import engine
+from core.db import engine
 
 INDICES = [
     ("idx_chamado_status", "chamado", ["status"]),

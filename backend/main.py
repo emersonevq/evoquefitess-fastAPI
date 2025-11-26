@@ -15,9 +15,17 @@ import uuid
 from sqlalchemy.orm import Session
 from core.db import get_db, engine
 from ti.models.media import Media
+from ti.scripts.create_performance_indices import create_indices
 
 # Create the FastAPI application (HTTP)
 _http = FastAPI(title="Evoque API - TI", version="1.0.0")
+
+# Criar índices de performance na inicialização
+try:
+    create_indices()
+except Exception as e:
+    print(f"⚠️  Erro ao criar índices de performance: {e}")
+
 # Static uploads mount
 _base_dir = Path(__file__).resolve().parent
 _uploads = _base_dir / "uploads"

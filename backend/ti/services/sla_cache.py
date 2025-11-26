@@ -45,13 +45,13 @@ class SLACacheManager:
 
     # Configurações de TTL por tipo de métrica
     CACHE_TTL = {
-        "sla_compliance_24h": 5 * 60,  # 5 minutos
-        "sla_compliance_mes": 15 * 60,  # 15 minutos
-        "sla_distribution": 15 * 60,  # 15 minutos
-        "tempo_resposta_24h": 5 * 60,  # 5 minutos
-        "tempo_resposta_mes": 15 * 60,  # 15 minutos
-        "chamado_sla_status": 2 * 60,  # 2 minutos (por chamado é mais sensível)
-        "metrics_basic": 2 * 60,  # 2 minutos
+        "sla_compliance_24h": 30 * 60,  # 30 minutos (aumentado de 5)
+        "sla_compliance_mes": 60 * 60,  # 60 minutos (aumentado de 15)
+        "sla_distribution": 60 * 60,  # 60 minutos (aumentado de 15)
+        "tempo_resposta_24h": 30 * 60,  # 30 minutos (aumentado de 5)
+        "tempo_resposta_mes": 60 * 60,  # 60 minutos (aumentado de 15)
+        "chamado_sla_status": 5 * 60,  # 5 minutos (aumentado de 2, é menos sensível)
+        "metrics_basic": 5 * 60,  # 5 minutos (aumentado de 2)
     }
 
     # Chaves de cache relacionadas para invalidação

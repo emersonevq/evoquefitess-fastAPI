@@ -49,16 +49,32 @@ def get_sla_metrics(db: Session = Depends(get_db)):
         tempo_resposta_24h = MetricsCalculator.get_tempo_medio_resposta_24h(db)
         sla_distribution = MetricsCalculator.get_sla_distribution(db)
 
+        # Type casting garantido
+        sla_24h = MetricsCalculator.get_sla_compliance_24h(db)
+        sla_mes = MetricsCalculator.get_sla_compliance_mes(db)
+
+        # Garante que são números e não objetos
+        sla_24h_value = int(sla_24h) if isinstance(sla_24h, (int, float)) else 0
+        sla_mes_value = int(sla_mes) if isinstance(sla_mes, (int, float)) else 0
+
         return {
-            "sla_compliance_24h": MetricsCalculator.get_sla_compliance_24h(db),
-            "sla_compliance_mes": MetricsCalculator.get_sla_compliance_mes(db),
-            "sla_distribution": sla_distribution,
+            "sla_compliance_24h": sla_24h_value,
+            "sla_compliance_mes": sla_mes_value,
+            "sla_distribution": sla_distribution if isinstance(sla_distribution, dict) else {
+                "dentro_sla": 0,
+                "fora_sla": 0,
+                "percentual_dentro": 0,
+                "percentual_fora": 0,
+                "total": 0
+            },
             "tempo_resposta_24h": tempo_resposta_24h,
             "tempo_resposta_mes": tempo_resposta_mes,
             "total_chamados_mes": total_chamados_mes,
         }
     except Exception as e:
         print(f"[ERROR] Erro ao calcular métricas SLA: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "sla_compliance_24h": 0,
             "sla_compliance_mes": 0,
@@ -158,9 +174,13 @@ def get_chamados_por_dia(dias: int = 7, db: Session = Depends(get_db)):
     """Retorna quantidade de chamados por dia dos últimos N dias"""
     try:
         dados = MetricsCalculator.get_chamados_por_dia(db, dias)
+        if not isinstance(dados, list):
+            return {"dados": []}
         return {"dados": dados}
     except Exception as e:
         print(f"Erro ao calcular chamados por dia: {e}")
+        import traceback
+        traceback.print_exc()
         return {"dados": []}
 
 
@@ -169,9 +189,13 @@ def get_chamados_por_semana(semanas: int = 4, db: Session = Depends(get_db)):
     """Retorna quantidade de chamados por semana dos últimos N semanas"""
     try:
         dados = MetricsCalculator.get_chamados_por_semana(db, semanas)
+        if not isinstance(dados, list):
+            return {"dados": []}
         return {"dados": dados}
     except Exception as e:
         print(f"Erro ao calcular chamados por semana: {e}")
+        import traceback
+        traceback.print_exc()
         return {"dados": []}
 
 
@@ -180,9 +204,29 @@ def get_sla_distribution(db: Session = Depends(get_db)):
     """Retorna distribuição de SLA (dentro/fora do acordo)"""
     try:
         dist = MetricsCalculator.get_sla_distribution(db)
-        return dist
+
+        # Validação de tipo
+        if not isinstance(dist, dict):
+            return {
+                "dentro_sla": 0,
+                "fora_sla": 0,
+                "percentual_dentro": 0,
+                "percentual_fora": 0,
+                "total": 0
+            }
+
+        # Garante que todos os campos existem e são números
+        return {
+            "dentro_sla": int(dist.get("dentro_sla", 0)),
+            "fora_sla": int(dist.get("fora_sla", 0)),
+            "percentual_dentro": int(dist.get("percentual_dentro", 0)),
+            "percentual_fora": int(dist.get("percentual_fora", 0)),
+            "total": int(dist.get("total", 0))
+        }
     except Exception as e:
         print(f"Erro ao calcular distribuição de SLA: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "dentro_sla": 0,
             "fora_sla": 0,
@@ -227,4 +271,39 @@ def debug_tempo_resposta(periodo: str = "mes", db: Session = Depends(get_db)):
             "status": "erro",
             "erro": str(e),
             "periodo": periodo
+        }
+
+
+@router.post("/metrics/debug/recalculate-sla")
+def debug_recalculate_sla(db: Session = Depends(get_db)):
+    """
+    Debug: força recálculo de todas as métricas de SLA
+    Útil para verificar se há problemas nos cálculos
+    """
+    try:
+        from ti.services.sla_cache import SLACacheManager
+        from core.utils import now_brazil_naive
+
+        # Invalida todos os caches
+        SLACacheManager.invalidate_all_sla(db)
+
+        # Recalcula
+        sla_24h = MetricsCalculator.get_sla_compliance_24h(db)
+        sla_mes = MetricsCalculator.get_sla_compliance_mes(db)
+        sla_dist = MetricsCalculator.get_sla_distribution(db)
+
+        return {
+            "status": "ok",
+            "sla_compliance_24h": sla_24h,
+            "sla_compliance_mes": sla_mes,
+            "sla_distribution": sla_dist,
+            "timestamp": now_brazil_naive().isoformat()
+        }
+    except Exception as e:
+        print(f"Erro ao recalcular SLA: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "erro",
+            "erro": str(e)
         }
