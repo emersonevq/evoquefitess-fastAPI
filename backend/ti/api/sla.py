@@ -351,7 +351,12 @@ def recalcular_sla_painel(db: Session = Depends(get_db)):
             "erros": 0,
         }
 
-        chamados = db.query(Chamado).all()
+        chamados = db.query(Chamado).filter(
+            and_(
+                Chamado.status != "Cancelado",
+                Chamado.status != "Concluído"
+            )
+        ).all()
 
         for chamado in chamados:
             try:
