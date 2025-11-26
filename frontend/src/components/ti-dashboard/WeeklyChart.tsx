@@ -1,4 +1,12 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface WeeklyChartProps {
   data: Array<{
@@ -22,10 +30,20 @@ export function WeeklyChart({ data, loading }: WeeklyChartProps) {
       <h3 className="text-lg font-semibold mb-6">Chamados por semana</h3>
       <p className="text-xs text-muted-foreground mb-4">Último mês</p>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="semana" stroke="var(--muted-foreground)" style={{ fontSize: "12px" }} />
-          <YAxis stroke="var(--muted-foreground)" style={{ fontSize: "12px" }} />
+          <XAxis
+            dataKey="semana"
+            stroke="var(--muted-foreground)"
+            style={{ fontSize: "12px" }}
+          />
+          <YAxis
+            stroke="var(--muted-foreground)"
+            style={{ fontSize: "12px" }}
+          />
           <Tooltip
             contentStyle={{
               backgroundColor: "var(--card)",
@@ -34,7 +52,11 @@ export function WeeklyChart({ data, loading }: WeeklyChartProps) {
             }}
             labelStyle={{ color: "var(--foreground)" }}
           />
-          <Bar dataKey="quantidade" fill="var(--primary)" radius={[8, 8, 0, 0]} />
+          <Bar
+            dataKey="quantidade"
+            fill="var(--primary)"
+            radius={[8, 8, 0, 0]}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>

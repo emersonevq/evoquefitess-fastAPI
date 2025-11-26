@@ -6,7 +6,11 @@ interface SLADistributionProps {
   loading?: boolean;
 }
 
-export function SLADistribution({ dentroDaSla, foraDaSla, loading }: SLADistributionProps) {
+export function SLADistribution({
+  dentroDaSla,
+  foraDaSla,
+  loading,
+}: SLADistributionProps) {
   if (loading) {
     return (
       <div className="rounded-xl border border-border/60 bg-card p-6 h-80 flex items-center justify-center">
@@ -41,13 +45,18 @@ export function SLADistribution({ dentroDaSla, foraDaSla, loading }: SLADistribu
             cx="50%"
             cy="50%"
             labelLine={true}
-            label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+            label={({ name, value, percent }) =>
+              `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
+            }
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
           >
             {data.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+              />
             ))}
           </Pie>
           <Tooltip

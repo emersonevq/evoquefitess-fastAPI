@@ -48,11 +48,14 @@ interface PerformanceData {
 }
 
 export function TIDashboard() {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null,
+  );
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [slaData, setSLAData] = useState<SLAData | null>(null);
-  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [performanceData, setPerformanceData] =
+    useState<PerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,11 +63,21 @@ export function TIDashboard() {
       try {
         setLoading(true);
         const [dashboard, daily, weekly, sla, performance] = await Promise.all([
-          apiFetch("/api/metrics/dashboard").then((r) => r.json()).catch(() => null),
-          apiFetch("/api/metrics/chamados-por-dia").then((r) => r.json()).catch(() => ({ dados: [] })),
-          apiFetch("/api/metrics/chamados-por-semana").then((r) => r.json()).catch(() => ({ dados: [] })),
-          apiFetch("/api/metrics/sla-distribution").then((r) => r.json()).catch(() => null),
-          apiFetch("/api/metrics/performance").then((r) => r.json()).catch(() => null),
+          apiFetch("/api/metrics/dashboard")
+            .then((r) => r.json())
+            .catch(() => null),
+          apiFetch("/api/metrics/chamados-por-dia")
+            .then((r) => r.json())
+            .catch(() => ({ dados: [] })),
+          apiFetch("/api/metrics/chamados-por-semana")
+            .then((r) => r.json())
+            .catch(() => ({ dados: [] })),
+          apiFetch("/api/metrics/sla-distribution")
+            .then((r) => r.json())
+            .catch(() => null),
+          apiFetch("/api/metrics/performance")
+            .then((r) => r.json())
+            .catch(() => null),
         ]);
 
         setDashboardData(dashboard);
