@@ -165,27 +165,47 @@ class MetricsCalculator:
     @staticmethod
     def get_sla_compliance_24h(db: Session) -> int:
         """Calcula percentual de SLA cumprido (baseado em chamados ativos)"""
-        from ti.services.sla import SLACalculator
+        try:
+            from ti.services.sla import SLACalculator
 
-        chamados_ativos = db.query(Chamado).filter(
-            and_(
-                Chamado.status != "Concluído",
-                Chamado.status != "Cancelado"
-            )
-        ).all()
+            chamados_ativos = db.query(Chamado).filter(
+                and_(
+                    Chamado.status != "Concluído",
+                    Chamado.status != "Cancelado"
+                )
+            ).all()
 
-        if not chamados_ativos:
+            if not chamados_ativos:
+                return 0
+
+            dentro_sla = 0
+            fora_sla = 0
+
+            for chamado in chamados_ativos:
+                try:
+                    sla_status = SLACalculator.get_sla_status(db, chamado)
+                    status_resolucao = sla_status.get("tempo_resolucao_status")
+
+                    if status_resolucao == "ok":
+                        dentro_sla += 1
+                    elif status_resolucao == "vencido":
+                        fora_sla += 1
+                except Exception as e:
+                    print(f"Erro ao calcular SLA do chamado {chamado.id}: {e}")
+                    continue
+
+            total = dentro_sla + fora_sla
+            if total == 0:
+                return 0
+
+            percentual = int((dentro_sla / total) * 100)
+            return percentual
+
+        except Exception as e:
+            print(f"Erro ao calcular SLA compliance: {e}")
+            import traceback
+            traceback.print_exc()
             return 0
-
-        em_dia = 0
-        for chamado in chamados_ativos:
-            sla_status = SLACalculator.get_sla_status(db, chamado)
-            if sla_status.get("tempo_resposta_status") == "ok" and sla_status.get("tempo_resolucao_status") == "ok":
-                em_dia += 1
-
-        percentual = int((em_dia / len(chamados_ativos)) * 100) if chamados_ativos else 0
-
-        return percentual
 
     @staticmethod
     def get_chamados_hoje_count(db: Session) -> int:
