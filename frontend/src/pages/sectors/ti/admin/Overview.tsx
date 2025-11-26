@@ -96,12 +96,12 @@ const colorStyles = {
 };
 
 export default function Overview() {
-  const { data: metrics, isLoading: metricsLoading } = useMetrics();
+  const [metrics, setMetrics] = useState<any>(null);
   const [dailyData, setDailyData] = useState<
-    Array<{ day: string; abertos: number }>
+    Array<{ dia: string; quantidade: number }>
   >([]);
   const [weeklyData, setWeeklyData] = useState<
-    Array<{ semana: string; chamados: number }>
+    Array<{ semana: string; quantidade: number }>
   >([]);
   const [slaData, setSLAData] = useState<{
     dentro_sla: number;
@@ -113,35 +113,49 @@ export default function Overview() {
     taxa_reaberturas: string;
     chamados_backlog: number;
   } | null>(null);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setDataLoading(true);
-        const [daily, weekly, sla, performance] = await Promise.all([
-          apiFetch("/metrics/chamados-por-dia")
-            .then((r) => r.json())
-            .catch(() => ({ dados: [] })),
-          apiFetch("/metrics/chamados-por-semana")
-            .then((r) => r.json())
-            .catch(() => ({ dados: [] })),
-          apiFetch("/metrics/sla-distribution")
-            .then((r) => r.json())
-            .catch(() => ({ dentro_sla: 0, fora_sla: 0 })),
-          apiFetch("/metrics/performance")
-            .then((r) => r.json())
-            .catch(() => null),
+        setIsLoading(true);
+
+        const fetchWithTimeout = (path: string, timeout = 5000) => {
+          return Promise.race([
+            api.get(path),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Timeout")), timeout)
+            ),
+          ]);
+        };
+
+        const results = await Promise.allSettled([
+          fetchWithTimeout("/metrics/dashboard"),
+          fetchWithTimeout("/metrics/chamados-por-dia"),
+          fetchWithTimeout("/metrics/chamados-por-semana"),
+          fetchWithTimeout("/metrics/sla-distribution"),
+          fetchWithTimeout("/metrics/performance"),
         ]);
 
-        setDailyData(daily?.dados || []);
-        setWeeklyData(weekly?.dados || []);
-        setSLAData(sla || { dentro_sla: 0, fora_sla: 0 });
-        setPerformanceData(performance);
+        if (results[0].status === "fulfilled") {
+          setMetrics(results[0].value.data);
+        }
+        if (results[1].status === "fulfilled") {
+          setDailyData(results[1].value.data?.dados || []);
+        }
+        if (results[2].status === "fulfilled") {
+          setWeeklyData(results[2].value.data?.dados || []);
+        }
+        if (results[3].status === "fulfilled") {
+          setSLAData(results[3].value.data || { dentro_sla: 0, fora_sla: 0 });
+        }
+        if (results[4].status === "fulfilled") {
+          setPerformanceData(results[4].value.data);
+        }
       } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
       } finally {
-        setDataLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -149,8 +163,6 @@ export default function Overview() {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const isLoading = metricsLoading || dataLoading;
 
   if (isLoading) {
     return (
