@@ -510,13 +510,16 @@ class MetricsCalculator:
 
     @staticmethod
     def get_sla_distribution(db: Session) -> dict:
-        """Retorna distribuição de SLA (dentro/fora) - SINCRONIZADO COM CARD SLA"""
+        """Retorna distribuiç��o de SLA (dentro/fora) - SINCRONIZADO COM CARD SLA"""
         # Tenta cache primeiro
         cached = SLACacheManager.get(db, "sla_distribution")
         if cached is not None:
+            print(f"[CACHE HIT] SLA Distribution: {cached}")
             return cached
 
+        print("[CACHE MISS] SLA Distribution calculando...")
         result = MetricsCalculator._calculate_sla_distribution(db)
+        print(f"[CACHE SET] SLA Distribution: {result}")
         SLACacheManager.set(db, "sla_distribution", result)
         return result
 
