@@ -105,12 +105,22 @@ class MetricsCalculator:
 
     @staticmethod
     def get_tempo_medio_resposta_mes(db: Session) -> tuple[str, int]:
-        """Calcula tempo médio de PRIMEIRA resposta deste mês"""
+        """Calcula tempo médio de PRIMEIRA resposta deste mês usando Chamado.data_primeira_resposta"""
         agora = now_brazil_naive()
         mes_inicio = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         try:
-            # Conta chamados do mês
+            # Busca chamados do mês que já tiveram primeira resposta
+            chamados = db.query(Chamado).filter(
+                and_(
+                    Chamado.data_abertura >= mes_inicio,
+                    Chamado.data_abertura <= agora,
+                    Chamado.status != "Cancelado",
+                    Chamado.data_primeira_resposta.isnot(None)
+                )
+            ).all()
+
+            # Conta total de chamados do mês (mesmo sem resposta)
             total_chamados_mes = db.query(Chamado).filter(
                 and_(
                     Chamado.data_abertura >= mes_inicio,
@@ -119,46 +129,18 @@ class MetricsCalculator:
                 )
             ).count()
 
-            if total_chamados_mes == 0:
-                return "—", 0
-
-            # Subquery para pegar apenas a PRIMEIRA resposta por chamado
-            subquery = db.query(
-                HistoricoStatus.chamado_id,
-                func.min(HistoricoStatus.created_at).label('primeira_resposta_at')
-            ).filter(
-                and_(
-                    HistoricoStatus.created_at >= mes_inicio,
-                    HistoricoStatus.status.in_(["Em Atendimento", "Em análise", "Em andamento"])
-                )
-            ).group_by(HistoricoStatus.chamado_id).subquery()
-
-            # Busca os históricos da primeira resposta + dados do chamado (JOIN direto)
-            resultados = db.query(
-                HistoricoStatus.data_inicio,
-                Chamado.data_abertura
-            ).join(
-                subquery,
-                and_(
-                    HistoricoStatus.chamado_id == subquery.c.chamado_id,
-                    HistoricoStatus.created_at == subquery.c.primeira_resposta_at
-                )
-            ).join(
-                Chamado,
-                Chamado.id == HistoricoStatus.chamado_id
-            ).all()
-
-            if not resultados:
+            if not chamados:
                 return "—", total_chamados_mes
 
             # Calcula os tempos
             tempos = []
-            for data_inicio, data_abertura in resultados:
-                if data_inicio and data_abertura:
-                    delta = data_inicio - data_abertura
+            for chamado in chamados:
+                if chamado.data_primeira_resposta and chamado.data_abertura:
+                    delta = chamado.data_primeira_resposta - chamado.data_abertura
                     horas = delta.total_seconds() / 3600
-                    # Filtro de sanidade: apenas valores entre 0 e 72h
-                    if 0 <= horas <= 72:
+
+                    # Filtro de sanidade: apenas valores entre 0 e 24h
+                    if 0 <= horas <= 24:
                         tempos.append(horas)
 
             if not tempos:
