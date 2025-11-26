@@ -889,7 +889,8 @@ class MetricsCalculator:
                     horas = SLACalculator.calculate_business_hours(
                         chamado.data_abertura,
                         chamado.data_primeira_resposta,
-                        db
+                        db,
+                        business_hours_cache
                     )
                     if 0 <= horas <= 72:
                         tempos_primeira_resposta.append(horas)
