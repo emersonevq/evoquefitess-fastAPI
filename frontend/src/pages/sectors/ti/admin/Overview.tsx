@@ -87,26 +87,7 @@ function Metric({
   );
 }
 
-const daily = Array.from({ length: 7 }).map((_, i) => ({
-  day: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][i],
-  abertos: Math.floor(Math.random() * 10) + 2,
-}));
-const weekly = Array.from({ length: 4 }).map((_, i) => ({
-  semana: `S${i + 1}`,
-  chamados: Math.floor(Math.random() * 40) + 10,
-}));
-const pieData = [
-  { name: "Dentro SLA", value: 82 },
-  { name: "Fora SLA", value: 18 },
-];
 const COLORS = ["#fa6400", "#334155"];
-
-const performanceItems = [
-  { label: "Tempo médio de resolução", value: "6h 12m", color: "orange" },
-  { label: "Primeira resposta", value: "28m", color: "blue" },
-  { label: "Taxa de reaberturas", value: "3%", color: "green" },
-  { label: "Chamados em backlog", value: "14", color: "purple" },
-];
 
 const colorStyles = {
   orange: "bg-orange-500",
@@ -116,7 +97,54 @@ const colorStyles = {
 };
 
 export default function Overview() {
-  const { data: metrics, isLoading } = useMetrics();
+  const { data: metrics, isLoading: metricsLoading } = useMetrics();
+  const [dailyData, setDailyData] = useState<Array<{ day: string; abertos: number }>>([]);
+  const [weeklyData, setWeeklyData] = useState<Array<{ semana: string; chamados: number }>>([]);
+  const [slaData, setSLAData] = useState<{ dentro_sla: number; fora_sla: number }>({ dentro_sla: 0, fora_sla: 0 });
+  const [performanceData, setPerformanceData] = useState<{
+    tempo_resolucao_medio: string;
+    primeira_resposta_media: string;
+    taxa_reaberturas: string;
+    chamados_backlog: number;
+  } | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setDataLoading(true);
+        const [daily, weekly, sla, performance] = await Promise.all([
+          apiFetch("/api/metrics/chamados-por-dia")
+            .then((r) => r.json())
+            .catch(() => ({ dados: [] })),
+          apiFetch("/api/metrics/chamados-por-semana")
+            .then((r) => r.json())
+            .catch(() => ({ dados: [] })),
+          apiFetch("/api/metrics/sla-distribution")
+            .then((r) => r.json())
+            .catch(() => ({ dentro_sla: 0, fora_sla: 0 })),
+          apiFetch("/api/metrics/performance")
+            .then((r) => r.json())
+            .catch(() => null),
+        ]);
+
+        setDailyData(daily?.dados || []);
+        setWeeklyData(weekly?.dados || []);
+        setSLAData(sla || { dentro_sla: 0, fora_sla: 0 });
+        setPerformanceData(performance);
+      } catch (error) {
+        console.error("Erro ao carregar dados do dashboard:", error);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isLoading = metricsLoading || dataLoading;
 
   if (isLoading) {
     return (
