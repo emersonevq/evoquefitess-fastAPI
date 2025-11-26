@@ -45,50 +45,65 @@ def get_sla_metrics(db: Session = Depends(get_db)):
     - total_chamados_mes: Total de chamados deste mês
     """
     try:
+        # Valida tipos esperados com exceções explícitas
         tempo_resposta_mes, total_chamados_mes = MetricsCalculator.get_tempo_medio_resposta_mes(db)
+        if not isinstance(tempo_resposta_mes, str):
+            raise TypeError(f"tempo_resposta_mes deve ser string, recebido: {type(tempo_resposta_mes)}")
+        if not isinstance(total_chamados_mes, int):
+            raise TypeError(f"total_chamados_mes deve ser int, recebido: {type(total_chamados_mes)}")
+
         tempo_resposta_24h = MetricsCalculator.get_tempo_medio_resposta_24h(db)
+        if not isinstance(tempo_resposta_24h, str):
+            raise TypeError(f"tempo_resposta_24h deve ser string, recebido: {type(tempo_resposta_24h)}")
+
         sla_distribution = MetricsCalculator.get_sla_distribution(db)
+        if not isinstance(sla_distribution, dict):
+            raise TypeError(f"sla_distribution deve ser dict, recebido: {type(sla_distribution)}")
 
-        # Type casting garantido
+        # Valida estrutura de sla_distribution
+        required_keys = {"dentro_sla", "fora_sla", "percentual_dentro", "percentual_fora", "total"}
+        if not required_keys.issubset(sla_distribution.keys()):
+            raise ValueError(f"sla_distribution falta chaves: {required_keys - set(sla_distribution.keys())}")
+
         sla_24h = MetricsCalculator.get_sla_compliance_24h(db)
-        sla_mes = MetricsCalculator.get_sla_compliance_mes(db)
+        if not isinstance(sla_24h, int):
+            raise TypeError(f"sla_compliance_24h deve ser int, recebido: {type(sla_24h)}")
+        if not (0 <= sla_24h <= 100):
+            raise ValueError(f"sla_compliance_24h deve estar entre 0-100, recebido: {sla_24h}")
 
-        # Garante que são números e não objetos
-        sla_24h_value = int(sla_24h) if isinstance(sla_24h, (int, float)) else 0
-        sla_mes_value = int(sla_mes) if isinstance(sla_mes, (int, float)) else 0
+        sla_mes = MetricsCalculator.get_sla_compliance_mes(db)
+        if not isinstance(sla_mes, int):
+            raise TypeError(f"sla_compliance_mes deve ser int, recebido: {type(sla_mes)}")
+        if not (0 <= sla_mes <= 100):
+            raise ValueError(f"sla_compliance_mes deve estar entre 0-100, recebido: {sla_mes}")
 
         return {
-            "sla_compliance_24h": sla_24h_value,
-            "sla_compliance_mes": sla_mes_value,
-            "sla_distribution": sla_distribution if isinstance(sla_distribution, dict) else {
-                "dentro_sla": 0,
-                "fora_sla": 0,
-                "percentual_dentro": 0,
-                "percentual_fora": 0,
-                "total": 0
-            },
+            "sla_compliance_24h": sla_24h,
+            "sla_compliance_mes": sla_mes,
+            "sla_distribution": sla_distribution,
             "tempo_resposta_24h": tempo_resposta_24h,
             "tempo_resposta_mes": tempo_resposta_mes,
             "total_chamados_mes": total_chamados_mes,
         }
-    except Exception as e:
-        print(f"[ERROR] Erro ao calcular métricas SLA: {e}")
+    except (TypeError, ValueError) as e:
+        # Logging de erro explícito - não mascara
+        print(f"[VALIDATION ERROR] Erro ao validar métricas SLA: {e}")
         import traceback
         traceback.print_exc()
-        return {
-            "sla_compliance_24h": 0,
-            "sla_compliance_mes": 0,
-            "sla_distribution": {
-                "dentro_sla": 0,
-                "fora_sla": 0,
-                "percentual_dentro": 0,
-                "percentual_fora": 0,
-                "total": 0
-            },
-            "tempo_resposta_24h": "—",
-            "tempo_resposta_mes": "—",
-            "total_chamados_mes": 0,
-        }
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro no cálculo de métricas SLA: {str(e)}"
+        )
+    except Exception as e:
+        print(f"[ERROR] Erro inesperado ao calcular métricas SLA: {e}")
+        import traceback
+        traceback.print_exc()
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao calcular métricas SLA: {str(e)}"
+        )
 
 
 @router.get("/metrics/dashboard")
