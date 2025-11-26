@@ -474,31 +474,43 @@ class MetricsCalculator:
             )
         ).all()
 
-        print(f"\n{'='*80}")
+        print(f"\n{'='*100}")
         print(f"DEBUG: Tempo de Resposta ({periodo})")
+        print(f"Período: {inicio.strftime('%Y-%m-%d %H:%M:%S')} a {agora.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Total de registros encontrados: {len(historicos)}")
-        print(f"Período: {inicio} a {agora}")
-        print(f"{'='*80}")
+        print(f"{'='*100}")
 
         # Agrupa por chamado_id para mostrar quantos registros por chamado
         from collections import Counter
         chamado_counts = Counter(h.chamado_id for h in historicos)
-        print(f"Total de chamados únicos: {len(chamado_counts)}")
-        print(f"Chamados com múltiplos registros: {sum(1 for c in chamado_counts.values() if c > 1)}")
-        print()
+        print(f"\nTotal de chamados únicos: {len(chamado_counts)}")
+        duplicados = {k: v for k, v in chamado_counts.items() if v > 1}
+        print(f"Chamados com múltiplos registros: {len(duplicados)}")
 
-        for h in historicos[:20]:  # Primeiros 20
+        if duplicados:
+            print(f"\nExemplos de chamados com duplicatas:")
+            for chamado_id, count in list(duplicados.items())[:5]:
+                print(f"  - Chamado #{chamado_id}: {count} registros")
+
+        print(f"\n{'─'*100}")
+        print(f"{'Chamado':>8} | {'Aberto':>19} | {'Status':>15} | {'Resposta':>19} | {'Delta (horas)':>14} | {'Validado?':>10}")
+        print(f"{'─'*100}")
+
+        # Mostra exemplos detalhados
+        for h in historicos[:15]:  # Primeiros 15
             chamado = db.query(Chamado).filter(Chamado.id == h.chamado_id).first()
             if chamado:
                 delta = h.data_inicio - chamado.data_abertura if h.data_inicio else None
                 horas = delta.total_seconds() / 3600 if delta else 0
-                print(f"Chamado #{h.chamado_id:4d} | Aberto: {chamado.data_abertura} | "
-                      f"Status: {h.status:15s} | Resposta: {h.data_inicio} | Delta: {horas:6.1f}h")
+                validado = "✓" if (0 <= horas <= 72) else "✗"
+                print(f"{h.chamado_id:>8} | {str(chamado.data_abertura):>19} | {h.status:>15} | "
+                      f"{str(h.data_inicio):>19} | {horas:>14.1f} | {validado:>10}")
 
-        if len(historicos) > 20:
-            print(f"\n... e mais {len(historicos) - 20} registros")
+        if len(historicos) > 15:
+            print(f"{'─'*100}")
+            print(f"... e mais {len(historicos) - 15} registros")
 
-        print(f"{'='*80}\n")
+        print(f"{'='*100}\n")
 
         return historicos
 
