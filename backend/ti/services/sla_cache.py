@@ -33,13 +33,19 @@ class SLACacheEntry:
 class SLACacheManager:
     """
     Gerenciador de cache robusto para SLA com:
+    - Estratégia unificada: Memória é primária, DB é fallback/persistência
     - Cache em memória com TTL
-    - Persistência em banco de dados
-    - Invalidação inteligente
+    - Persistência em banco de dados como recuperação
+    - Invalidação inteligente por padrão
     - Batch operations
+
+    Garantias:
+    1. Uma única fonte de verdade para cada métrica
+    2. Consistência entre réplicas (TTL sincronizado)
+    3. Invalidação automática ao fazer mudanças
     """
 
-    # Cache em memória (rápido)
+    # Cache em memória (primário)
     _memory_cache: dict[str, SLACacheEntry] = {}
     _lock = threading.Lock()
 
