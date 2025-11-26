@@ -25,7 +25,9 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
         metrics = MetricsCalculator.get_dashboard_metrics(db)
         return metrics
     except Exception as e:
-        print(f"Erro ao calcular métricas: {e}")
+        print(f"[ERROR] Erro ao calcular métricas: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "chamados_hoje": 0,
             "comparacao_ontem": {"hoje": 0, "ontem": 0, "percentual": 0, "direcao": "up"},

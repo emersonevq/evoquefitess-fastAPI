@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   TrendingUp,
   Clock,
@@ -9,6 +9,7 @@ import {
   Loader,
 } from "lucide-react";
 import { useMetrics } from "@/hooks/useMetrics";
+import { apiFetch } from "@/lib/api";
 import {
   Bar,
   BarChart,
@@ -86,26 +87,7 @@ function Metric({
   );
 }
 
-const daily = Array.from({ length: 7 }).map((_, i) => ({
-  day: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][i],
-  abertos: Math.floor(Math.random() * 10) + 2,
-}));
-const weekly = Array.from({ length: 4 }).map((_, i) => ({
-  semana: `S${i + 1}`,
-  chamados: Math.floor(Math.random() * 40) + 10,
-}));
-const pieData = [
-  { name: "Dentro SLA", value: 82 },
-  { name: "Fora SLA", value: 18 },
-];
 const COLORS = ["#fa6400", "#334155"];
-
-const performanceItems = [
-  { label: "Tempo médio de resolução", value: "6h 12m", color: "orange" },
-  { label: "Primeira resposta", value: "28m", color: "blue" },
-  { label: "Taxa de reaberturas", value: "3%", color: "green" },
-  { label: "Chamados em backlog", value: "14", color: "purple" },
-];
 
 const colorStyles = {
   orange: "bg-orange-500",
@@ -115,7 +97,61 @@ const colorStyles = {
 };
 
 export default function Overview() {
-  const { data: metrics, isLoading } = useMetrics();
+  const { data: metrics, isLoading: metricsLoading } = useMetrics();
+  const [dailyData, setDailyData] = useState<
+    Array<{ day: string; abertos: number }>
+  >([]);
+  const [weeklyData, setWeeklyData] = useState<
+    Array<{ semana: string; chamados: number }>
+  >([]);
+  const [slaData, setSLAData] = useState<{
+    dentro_sla: number;
+    fora_sla: number;
+  }>({ dentro_sla: 0, fora_sla: 0 });
+  const [performanceData, setPerformanceData] = useState<{
+    tempo_resolucao_medio: string;
+    primeira_resposta_media: string;
+    taxa_reaberturas: string;
+    chamados_backlog: number;
+  } | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setDataLoading(true);
+        const [daily, weekly, sla, performance] = await Promise.all([
+          apiFetch("/api/metrics/chamados-por-dia")
+            .then((r) => r.json())
+            .catch(() => ({ dados: [] })),
+          apiFetch("/api/metrics/chamados-por-semana")
+            .then((r) => r.json())
+            .catch(() => ({ dados: [] })),
+          apiFetch("/api/metrics/sla-distribution")
+            .then((r) => r.json())
+            .catch(() => ({ dentro_sla: 0, fora_sla: 0 })),
+          apiFetch("/api/metrics/performance")
+            .then((r) => r.json())
+            .catch(() => null),
+        ]);
+
+        setDailyData(daily?.dados || []);
+        setWeeklyData(weekly?.dados || []);
+        setSLAData(sla || { dentro_sla: 0, fora_sla: 0 });
+        setPerformanceData(performance);
+      } catch (error) {
+        console.error("Erro ao carregar dados do dashboard:", error);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isLoading = metricsLoading || dataLoading;
 
   if (isLoading) {
     return (
@@ -191,14 +227,14 @@ export default function Overview() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={daily}>
+              <LineChart data={dailyData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="hsl(var(--border))"
                   opacity={0.3}
                 />
                 <XAxis
-                  dataKey="day"
+                  dataKey="dia"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
@@ -212,7 +248,7 @@ export default function Overview() {
                 />
                 <Line
                   type="monotone"
-                  dataKey="abertos"
+                  dataKey="quantidade"
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
                   dot={{ fill: "hsl(var(--primary))", r: 4 }}
@@ -235,7 +271,7 @@ export default function Overview() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={weekly}>
+              <BarChart data={weeklyData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="hsl(var(--border))"
@@ -255,7 +291,7 @@ export default function Overview() {
                   }}
                 />
                 <Bar
-                  dataKey="chamados"
+                  dataKey="quantidade"
                   fill="hsl(var(--primary))"
                   radius={[8, 8, 0, 0]}
                 />
@@ -272,41 +308,61 @@ export default function Overview() {
           <div className="relative card-surface rounded-2xl p-6 border border-border/60">
             <h3 className="font-semibold text-lg mb-4">Distribuição SLA</h3>
             <div className="flex items-center justify-center">
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {slaData.dentro_sla === 0 && slaData.fora_sla === 0 ? (
+                <div className="h-[220px] flex items-center justify-center text-muted-foreground">
+                  Sem dados de SLA
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Dentro SLA", value: slaData.dentro_sla },
+                        { name: "Fora SLA", value: slaData.fora_sla },
+                      ]}
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {[
+                        { name: "Dentro SLA", value: slaData.dentro_sla },
+                        { name: "Fora SLA", value: slaData.fora_sla },
+                      ].map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
             <div className="flex items-center justify-center gap-6 mt-4">
-              {pieData.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: COLORS[index] }}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {item.name}:{" "}
-                    <span className="font-semibold text-foreground">
-                      {item.value}%
+              {[
+                { name: "Dentro SLA", value: slaData.dentro_sla },
+                { name: "Fora SLA", value: slaData.fora_sla },
+              ].map((item, index) => {
+                const total = slaData.dentro_sla + slaData.fora_sla;
+                const percentage =
+                  total > 0 ? Math.round((item.value / total) * 100) : 0;
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: COLORS[index] }}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {item.name}:{" "}
+                      <span className="font-semibold text-foreground">
+                        {percentage}%
+                      </span>
                     </span>
-                  </span>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -316,22 +372,49 @@ export default function Overview() {
           <div className="relative card-surface rounded-2xl p-6 border border-border/60">
             <h3 className="font-semibold text-lg mb-4">Desempenho do mês</h3>
             <div className="space-y-4">
-              {performanceItems.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-1.5 h-8 rounded-full ${colorStyles[item.color as keyof typeof colorStyles]}`}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {item.label}
-                    </span>
-                  </div>
-                  <span className="text-lg font-bold">{item.value}</span>
+              {!performanceData ? (
+                <div className="text-muted-foreground text-center py-4">
+                  Carregando dados de desempenho...
                 </div>
-              ))}
+              ) : (
+                [
+                  {
+                    label: "Tempo médio de resolução",
+                    value: performanceData.tempo_resolucao_medio,
+                    color: "orange",
+                  },
+                  {
+                    label: "Primeira resposta",
+                    value: performanceData.primeira_resposta_media,
+                    color: "blue",
+                  },
+                  {
+                    label: "Taxa de reaberturas",
+                    value: performanceData.taxa_reaberturas,
+                    color: "green",
+                  },
+                  {
+                    label: "Chamados em backlog",
+                    value: String(performanceData.chamados_backlog),
+                    color: "purple",
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-1.5 h-8 rounded-full ${colorStyles[item.color as keyof typeof colorStyles]}`}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {item.label}
+                      </span>
+                    </div>
+                    <span className="text-lg font-bold">{item.value}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

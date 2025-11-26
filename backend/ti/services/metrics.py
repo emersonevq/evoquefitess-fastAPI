@@ -13,16 +13,22 @@ class MetricsCalculator:
     @staticmethod
     def get_chamados_abertos_hoje(db: Session) -> int:
         """Retorna quantidade de chamados abertos hoje"""
-        hoje = now_brazil_naive().replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        count = db.query(Chamado).filter(
-            and_(
-                Chamado.data_abertura >= hoje,
-                Chamado.status != "Cancelado"
-            )
-        ).count()
-        
-        return count
+        try:
+            hoje = now_brazil_naive().replace(hour=0, minute=0, second=0, microsecond=0)
+
+            count = db.query(Chamado).filter(
+                and_(
+                    Chamado.data_abertura >= hoje,
+                    Chamado.status != "Cancelado"
+                )
+            ).count()
+
+            return count
+        except Exception as e:
+            print(f"Erro ao contar chamados de hoje: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
 
     @staticmethod
     def get_abertos_agora(db: Session) -> int:
@@ -30,14 +36,20 @@ class MetricsCalculator:
         Retorna quantidade de chamados ATIVOS (não concluídos nem cancelados).
         Equivalente a "todos" na página de gerenciar chamados.
         """
-        count = db.query(Chamado).filter(
-            and_(
-                Chamado.status != "Concluído",
-                Chamado.status != "Cancelado"
-            )
-        ).count()
+        try:
+            count = db.query(Chamado).filter(
+                and_(
+                    Chamado.status != "Concluído",
+                    Chamado.status != "Cancelado"
+                )
+            ).count()
 
-        return count
+            return count
+        except Exception as e:
+            print(f"Erro ao contar chamados ativos: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
 
     @staticmethod
     def get_tempo_medio_resposta_24h(db: Session) -> str:
@@ -164,21 +176,48 @@ class MetricsCalculator:
 
     @staticmethod
     def get_sla_compliance_24h(db: Session) -> int:
-        """Calcula percentual de SLA cumprido nas últimas 24h"""
-        agora = now_brazil_naive()
-        ontem = agora - timedelta(hours=24)
+        """Calcula percentual de SLA cumprido (baseado em chamados ativos)"""
+        try:
+            from ti.services.sla import SLACalculator
 
-        historicos = db.query(HistoricoSLA).filter(
-            HistoricoSLA.criado_em >= ontem
-        ).all()
+            chamados_ativos = db.query(Chamado).filter(
+                and_(
+                    Chamado.status != "Concluído",
+                    Chamado.status != "Cancelado"
+                )
+            ).all()
 
-        if not historicos:
+            if not chamados_ativos:
+                return 0
+
+            dentro_sla = 0
+            fora_sla = 0
+
+            for chamado in chamados_ativos:
+                try:
+                    sla_status = SLACalculator.get_sla_status(db, chamado)
+                    status_resolucao = sla_status.get("tempo_resolucao_status")
+
+                    if status_resolucao == "ok":
+                        dentro_sla += 1
+                    elif status_resolucao == "vencido":
+                        fora_sla += 1
+                except Exception as e:
+                    print(f"Erro ao calcular SLA do chamado {chamado.id}: {e}")
+                    continue
+
+            total = dentro_sla + fora_sla
+            if total == 0:
+                return 0
+
+            percentual = int((dentro_sla / total) * 100)
+            return percentual
+
+        except Exception as e:
+            print(f"Erro ao calcular SLA compliance: {e}")
+            import traceback
+            traceback.print_exc()
             return 0
-
-        em_dia = sum(1 for h in historicos if h.status_sla == "ok")
-        percentual = int((em_dia / len(historicos)) * 100)
-
-        return percentual
 
     @staticmethod
     def get_chamados_hoje_count(db: Session) -> int:
@@ -188,37 +227,43 @@ class MetricsCalculator:
     @staticmethod
     def get_comparacao_ontem(db: Session) -> dict:
         """Compara chamados de hoje vs ontem"""
-        agora = now_brazil_naive()
-        hoje_inicio = agora.replace(hour=0, minute=0, second=0, microsecond=0)
-        ontem_inicio = (agora - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        ontem_fim = hoje_inicio
-        
-        chamados_hoje = db.query(Chamado).filter(
-            and_(
-                Chamado.data_abertura >= hoje_inicio,
-                Chamado.status != "Cancelado"
-            )
-        ).count()
-        
-        chamados_ontem = db.query(Chamado).filter(
-            and_(
-                Chamado.data_abertura >= ontem_inicio,
-                Chamado.data_abertura < ontem_fim,
-                Chamado.status != "Cancelado"
-            )
-        ).count()
-        
-        if chamados_ontem == 0:
-            percentual = 0
-        else:
-            percentual = int(((chamados_hoje - chamados_ontem) / chamados_ontem) * 100)
-        
-        return {
-            "hoje": chamados_hoje,
-            "ontem": chamados_ontem,
-            "percentual": percentual,
-            "direcao": "up" if percentual >= 0 else "down"
-        }
+        try:
+            agora = now_brazil_naive()
+            hoje_inicio = agora.replace(hour=0, minute=0, second=0, microsecond=0)
+            ontem_inicio = (agora - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            ontem_fim = hoje_inicio
+
+            chamados_hoje = db.query(Chamado).filter(
+                and_(
+                    Chamado.data_abertura >= hoje_inicio,
+                    Chamado.status != "Cancelado"
+                )
+            ).count()
+
+            chamados_ontem = db.query(Chamado).filter(
+                and_(
+                    Chamado.data_abertura >= ontem_inicio,
+                    Chamado.data_abertura < ontem_fim,
+                    Chamado.status != "Cancelado"
+                )
+            ).count()
+
+            if chamados_ontem == 0:
+                percentual = 0
+            else:
+                percentual = int(((chamados_hoje - chamados_ontem) / chamados_ontem) * 100)
+
+            return {
+                "hoje": chamados_hoje,
+                "ontem": chamados_ontem,
+                "percentual": percentual,
+                "direcao": "up" if percentual >= 0 else "down"
+            }
+        except Exception as e:
+            print(f"Erro ao calcular comparação com ontem: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"hoje": 0, "ontem": 0, "percentual": 0, "direcao": "up"}
 
     @staticmethod
     def get_tempo_resolucao_media_30dias(db: Session) -> str:
@@ -499,15 +544,37 @@ class MetricsCalculator:
     @staticmethod
     def get_dashboard_metrics(db: Session) -> dict:
         """Retorna todos os métricas do dashboard"""
-        tempo_resposta_mes, total_chamados_mes = MetricsCalculator.get_tempo_medio_resposta_mes(db)
+        try:
+            tempo_resposta_mes, total_chamados_mes = MetricsCalculator.get_tempo_medio_resposta_mes(db)
 
-        return {
-            "chamados_hoje": MetricsCalculator.get_chamados_abertos_hoje(db),
-            "comparacao_ontem": MetricsCalculator.get_comparacao_ontem(db),
-            "tempo_resposta_24h": MetricsCalculator.get_tempo_medio_resposta_24h(db),
-            "tempo_resposta_mes": tempo_resposta_mes,
-            "total_chamados_mes": total_chamados_mes,
-            "sla_compliance_24h": MetricsCalculator.get_sla_compliance_24h(db),
-            "abertos_agora": MetricsCalculator.get_abertos_agora(db),
-            "tempo_resolucao_30dias": MetricsCalculator.get_tempo_resolucao_media_30dias(db),
-        }
+            chamados_hoje = MetricsCalculator.get_chamados_abertos_hoje(db)
+            comparacao_ontem = MetricsCalculator.get_comparacao_ontem(db)
+            tempo_resposta_24h = MetricsCalculator.get_tempo_medio_resposta_24h(db)
+            sla_compliance = MetricsCalculator.get_sla_compliance_24h(db)
+            abertos_agora = MetricsCalculator.get_abertos_agora(db)
+            tempo_resolucao = MetricsCalculator.get_tempo_resolucao_media_30dias(db)
+
+            return {
+                "chamados_hoje": chamados_hoje,
+                "comparacao_ontem": comparacao_ontem,
+                "tempo_resposta_24h": tempo_resposta_24h,
+                "tempo_resposta_mes": tempo_resposta_mes,
+                "total_chamados_mes": total_chamados_mes,
+                "sla_compliance_24h": sla_compliance,
+                "abertos_agora": abertos_agora,
+                "tempo_resolucao_30dias": tempo_resolucao,
+            }
+        except Exception as e:
+            print(f"Erro crítico ao calcular métricas do dashboard: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "chamados_hoje": 0,
+                "comparacao_ontem": {"hoje": 0, "ontem": 0, "percentual": 0, "direcao": "up"},
+                "tempo_resposta_24h": "—",
+                "tempo_resposta_mes": "—",
+                "total_chamados_mes": 0,
+                "sla_compliance_24h": 0,
+                "abertos_agora": 0,
+                "tempo_resolucao_30dias": "—",
+            }
