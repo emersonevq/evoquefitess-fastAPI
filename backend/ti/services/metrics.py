@@ -664,10 +664,11 @@ class MetricsCalculator:
 
     @staticmethod
     def _calculate_sla_distribution(db: Session) -> dict:
-        """Cálculo real - usa MESMOS critérios que get_sla_compliance_mes com otimização historicos_cache"""
+        """Cálculo real - usa MESMOS critérios que get_sla_compliance_mes com otimização historicos_cache e business_hours_cache"""
         start_time = time.time()
         try:
             from ti.services.sla import SLACalculator
+            from ti.models.sla_config import SLABusinessHours
 
             agora = now_brazil_naive()
             mes_inicio = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -697,6 +698,20 @@ class MetricsCalculator:
                     "total": 0
                 }
 
+            # PRÉ-CARREGAR business hours de uma vez (evita queries em loop)
+            business_hours_cache = {}
+            for weekday in range(5):
+                bh_result = db.query(SLABusinessHours).filter(
+                    and_(
+                        SLABusinessHours.dia_semana == weekday,
+                        SLABusinessHours.ativo == True
+                    )
+                ).first()
+                if bh_result:
+                    business_hours_cache[weekday] = (bh_result.hora_inicio, bh_result.hora_fim)
+                else:
+                    business_hours_cache[weekday] = SLACalculator.DEFAULT_BUSINESS_HOURS.get(weekday)
+
             chamado_ids = [c.id for c in chamados_mes]
             historicos_bulk = db.query(HistoricoStatus).filter(
                 HistoricoStatus.chamado_id.in_(chamado_ids)
@@ -723,7 +738,8 @@ class MetricsCalculator:
                         chamado.data_abertura,
                         data_final,
                         db,
-                        historicos_cache
+                        historicos_cache,
+                        business_hours_cache
                     )
 
                     if tempo_resolucao_horas <= sla_config.tempo_resolucao_horas:
