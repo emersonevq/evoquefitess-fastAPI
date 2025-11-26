@@ -794,15 +794,18 @@ export function Permissoes() {
         </div>
       </div>
 
-      <div ref={usersContainerRef}>
+      <div
+        ref={usersContainerRef}
+        className="max-h-[calc(100vh-300px)] overflow-y-auto rounded-lg border border-border/40 p-4"
+      >
         {loading && (
-          <div className="card-surface rounded-xl p-8 text-center">
+          <div className="text-center py-12">
             <div className="text-sm text-muted-foreground">Carregando usuários...</div>
           </div>
         )}
 
         {!loading && users.length === 0 && (
-          <div className="card-surface rounded-xl p-8 text-center">
+          <div className="text-center py-12">
             <div className="text-sm text-muted-foreground">
               Nenhum usuário encontrado.
             </div>
@@ -810,7 +813,7 @@ export function Permissoes() {
         )}
 
         {!loading && users.length > 0 && viewMode === "grid" && (
-          <div className="grid gap-4 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {users.slice(0, visibleUsers).map((u) => (
               <div
                 key={u.id}
