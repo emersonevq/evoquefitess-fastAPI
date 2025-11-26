@@ -99,6 +99,7 @@ const colorStyles = {
 
 export default function Overview() {
   const { warmupCache } = useSLACacheManager();
+  const queryClient = useQueryClient();
   const [metrics, setMetrics] = useState<any>(null);
   const [dailyData, setDailyData] = useState<
     Array<{ dia: string; quantidade: number }>
@@ -117,6 +118,57 @@ export default function Overview() {
     chamados_backlog: number;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Cache de métricas com React Query
+  const { data: basicMetricsData, isLoading: basicLoading } = useQuery({
+    queryKey: ["metrics-basic"],
+    queryFn: async () => {
+      const response = await api.get("/metrics/dashboard/basic");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos (cache persistence)
+  });
+
+  const { data: dailyChartData, isLoading: dailyLoading } = useQuery({
+    queryKey: ["metrics-daily"],
+    queryFn: async () => {
+      const response = await api.get("/metrics/chamados-por-dia");
+      return response.data?.dados || [];
+    },
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+
+  const { data: weeklyChartData, isLoading: weeklyLoading } = useQuery({
+    queryKey: ["metrics-weekly"],
+    queryFn: async () => {
+      const response = await api.get("/metrics/chamados-por-semana");
+      return response.data?.dados || [];
+    },
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+
+  const { data: slaMetricsData, isLoading: slaLoading } = useQuery({
+    queryKey: ["metrics-sla"],
+    queryFn: async () => {
+      const response = await api.get("/metrics/dashboard/sla");
+      return response.data;
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    gcTime: 120 * 60 * 1000, // 120 minutos (cache persistence)
+  });
+
+  const { data: performanceMetricsData, isLoading: performanceLoading } = useQuery({
+    queryKey: ["metrics-performance"],
+    queryFn: async () => {
+      const response = await api.get("/metrics/performance");
+      return response.data;
+    },
+    staleTime: 15 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
 
   useEffect(() => {
     let mounted = true;
