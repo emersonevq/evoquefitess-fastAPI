@@ -164,19 +164,26 @@ class MetricsCalculator:
 
     @staticmethod
     def get_sla_compliance_24h(db: Session) -> int:
-        """Calcula percentual de SLA cumprido nas últimas 24h"""
-        agora = now_brazil_naive()
-        ontem = agora - timedelta(hours=24)
+        """Calcula percentual de SLA cumprido (baseado em chamados ativos)"""
+        from ti.services.sla import SLACalculator
 
-        historicos = db.query(HistoricoSLA).filter(
-            HistoricoSLA.criado_em >= ontem
+        chamados_ativos = db.query(Chamado).filter(
+            and_(
+                Chamado.status != "Concluído",
+                Chamado.status != "Cancelado"
+            )
         ).all()
 
-        if not historicos:
+        if not chamados_ativos:
             return 0
 
-        em_dia = sum(1 for h in historicos if h.status_sla == "ok")
-        percentual = int((em_dia / len(historicos)) * 100)
+        em_dia = 0
+        for chamado in chamados_ativos:
+            sla_status = SLACalculator.get_sla_status(db, chamado)
+            if sla_status.get("tempo_resposta_status") == "ok" and sla_status.get("tempo_resolucao_status") == "ok":
+                em_dia += 1
+
+        percentual = int((em_dia / len(chamados_ativos)) * 100) if chamados_ativos else 0
 
         return percentual
 
