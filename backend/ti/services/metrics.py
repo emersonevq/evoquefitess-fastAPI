@@ -603,7 +603,7 @@ class MetricsCalculator:
             chamados_hoje = MetricsCalculator.get_chamados_abertos_hoje(db)
             comparacao_ontem = MetricsCalculator.get_comparacao_ontem(db)
             tempo_resposta_24h = MetricsCalculator.get_tempo_medio_resposta_24h(db)
-            sla_compliance = MetricsCalculator.get_sla_compliance_24h(db)
+            sla_compliance = MetricsCalculator.get_sla_compliance_mes(db)
             abertos_agora = MetricsCalculator.get_abertos_agora(db)
             tempo_resolucao = MetricsCalculator.get_tempo_resolucao_media_30dias(db)
 
