@@ -654,7 +654,7 @@ class MetricsCalculator:
             tempos_primeira_resposta = []
             for chamado in chamados_30dias:
                 if chamado.data_primeira_resposta and chamado.data_abertura:
-                    # Usa horas de NEGÓCIO
+                    # Usa horas de NEGÓCIO (não desconta nada para primeira resposta)
                     horas = SLACalculator.calculate_business_hours(
                         chamado.data_abertura,
                         chamado.data_primeira_resposta,
