@@ -315,6 +315,7 @@ _http.include_router(alerts_router, prefix="/api")
 _http.include_router(email_debug_router, prefix="/api")
 _http.include_router(sla_router, prefix="/api")
 _http.include_router(powerbi_router, prefix="/api")
+_http.include_router(metrics_router, prefix="/api")
 _http.include_router(dashboard_permissions_router, prefix="")
 
 # Compatibility mount without prefix, in case the server is run without proxy
