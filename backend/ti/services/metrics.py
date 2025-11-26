@@ -402,28 +402,48 @@ class MetricsCalculator:
         minutos = int((tempo_resolucao_medio - horas) * 60)
         tempo_resolucao_str = f"{horas}h {minutos}m" if minutos > 0 else f"{horas}h" if horas > 0 else "—"
 
-        # Tempo médio de primeira resposta usando historico_status
+        # Tempo médio de PRIMEIRA resposta usando historico_status
         tempos_primeira_resposta = []
-        historicos_primeiro_atendimento = db.query(HistoricoStatus).filter(
+
+        # Pega apenas a PRIMEIRA mudança de status por chamado nos últimos 30 dias
+        subquery = db.query(
+            HistoricoStatus.chamado_id,
+            func.min(HistoricoStatus.created_at).label('primeira_resposta_at')
+        ).filter(
             and_(
                 HistoricoStatus.created_at >= trinta_dias_atras,
                 HistoricoStatus.status.in_(["Em Atendimento", "Em análise", "Em andamento"])
             )
+        ).group_by(HistoricoStatus.chamado_id).subquery()
+
+        # Busca os históricos correspondentes à primeira resposta
+        primeiras_respostas = db.query(
+            HistoricoStatus.chamado_id,
+            HistoricoStatus.data_inicio
+        ).join(
+            subquery,
+            and_(
+                HistoricoStatus.chamado_id == subquery.c.chamado_id,
+                HistoricoStatus.created_at == subquery.c.primeira_resposta_at
+            )
         ).all()
 
-        for historico in historicos_primeiro_atendimento:
-            try:
-                chamado = db.query(Chamado).filter(
-                    Chamado.id == historico.chamado_id
-                ).first()
+        if primeiras_respostas:
+            # Busca todos os chamados de uma vez (evita N+1 queries)
+            chamado_ids = [pr.chamado_id for pr in primeiras_respostas]
+            chamados = db.query(Chamado).filter(
+                Chamado.id.in_(chamado_ids)
+            ).all()
 
-                if chamado and chamado.data_abertura and historico.data_inicio:
-                    delta = historico.data_inicio - chamado.data_abertura
+            chamados_dict = {c.id: c for c in chamados}
+
+            for pr in primeiras_respostas:
+                chamado = chamados_dict.get(pr.chamado_id)
+                if chamado and chamado.data_abertura and pr.data_inicio:
+                    delta = pr.data_inicio - chamado.data_abertura
                     minutos_delta = delta.total_seconds() / 60
-                    if minutos_delta >= 0:  # Apenas valores positivos
+                    if 0 <= minutos_delta <= 10080:  # Máximo 7 dias
                         tempos_primeira_resposta.append(minutos_delta)
-            except Exception:
-                continue
 
         tempo_primeira_resposta_medio = sum(tempos_primeira_resposta) / len(tempos_primeira_resposta) if tempos_primeira_resposta else 0
         tempo_primeira_resposta_str = f"{int(tempo_primeira_resposta_medio)}m" if tempo_primeira_resposta_medio > 0 else "—"
