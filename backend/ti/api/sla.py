@@ -15,6 +15,7 @@ from ti.schemas.sla import (
 from ti.models.sla_config import SLAConfiguration, SLABusinessHours, HistoricoSLA
 from ti.models.chamado import Chamado
 from ti.services.sla import SLACalculator
+from ti.services.sla_cache import SLACacheManager
 from core.utils import now_brazil_naive
 
 router = APIRouter(prefix="/sla", tags=["TI - SLA"])
