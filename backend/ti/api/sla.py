@@ -508,3 +508,66 @@ def limpar_cache_expirado(db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao limpar cache: {e}")
+
+
+@router.get("/validate/config/{config_id}")
+def validar_configuracao(config_id: int, db: Session = Depends(get_db)):
+    """
+    Valida uma configuração de SLA individual.
+    Retorna status de validação e lista de erros/warnings.
+    """
+    try:
+        config = db.query(SLAConfiguration).filter(
+            SLAConfiguration.id == config_id
+        ).first()
+
+        if not config:
+            raise HTTPException(status_code=404, detail="Configuração de SLA não encontrada")
+
+        validacao = SLAValidator.validar_configuracao(config)
+        return validacao
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao validar configuração: {e}")
+
+
+@router.get("/validate/all")
+def validar_todas_configuracoes(db: Session = Depends(get_db)):
+    """
+    Valida TODAS as configurações de SLA e horários comerciais.
+    Retorna resumo completo com erros e warnings.
+    """
+    try:
+        validacao = SLAValidator.validar_todas_configuracoes(db)
+        return validacao
+    except Exception as e:
+        return {
+            "sistema_valido": False,
+            "erro": str(e),
+            "configuracoes": [],
+            "horarios_comerciais": {
+                "valida": False,
+                "erros": [str(e)],
+                "warnings": [],
+            },
+            "resumo": {
+                "total_configs": 0,
+                "configs_validas": 0,
+                "total_erros": 1,
+                "total_warnings": 0,
+            },
+        }
+
+
+@router.get("/validate/chamado/{chamado_id}")
+def validar_dados_chamado(chamado_id: int, db: Session = Depends(get_db)):
+    """
+    Valida dados de um chamado específico para cálculo de SLA.
+    Útil para debug de cálculos incorretos.
+    """
+    try:
+        validacao = SLAValidator.validar_dados_chamado(db, chamado_id)
+        return validacao
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
