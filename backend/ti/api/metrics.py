@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from core.db import get_db
+from core.utils import now_brazil_naive
 from ti.services.metrics import MetricsCalculator
 
 router = APIRouter(prefix="/api", tags=["metrics"])
