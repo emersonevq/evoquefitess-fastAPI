@@ -8,8 +8,7 @@ import {
   ArrowDownRight,
   Loader,
 } from "lucide-react";
-import { useMetrics } from "@/hooks/useMetrics";
-import { apiFetch } from "@/lib/api";
+import { api } from "@/lib/api";
 import {
   Bar,
   BarChart,
