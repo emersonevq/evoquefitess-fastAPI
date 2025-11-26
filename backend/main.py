@@ -15,6 +15,7 @@ import uuid
 from sqlalchemy.orm import Session
 from core.db import get_db, engine
 from ti.models.media import Media
+from ti.scripts.create_performance_indices import create_indices
 
 # Create the FastAPI application (HTTP)
 _http = FastAPI(title="Evoque API - TI", version="1.0.0")
