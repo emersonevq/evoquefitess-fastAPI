@@ -118,15 +118,27 @@ class HistoricoSLAOut(BaseModel):
         from_attributes = True
 
 
+class SLAMetricResponse(BaseModel):
+    """Métrica de SLA (resposta ou resolução)"""
+    tempo_decorrido_horas: float
+    tempo_limite_horas: float
+    percentual_consumido: float
+    status: str
+    data_inicio: datetime | None
+    data_fim: datetime | None
+
+
 class SLAStatusResponse(BaseModel):
+    """Resposta completa de status SLA com estados claros"""
     chamado_id: int
     prioridade: str
-    status: str
-    tempo_decorrido_horas: float
-    tempo_resposta_limite_horas: float
-    tempo_resolucao_limite_horas: float
-    tempo_resposta_status: str
-    tempo_resolucao_status: str
+    status_chamado: str
+    resposta_metric: SLAMetricResponse | None
+    resolucao_metric: SLAMetricResponse | None
+    status_geral: str
     data_abertura: datetime | None
     data_primeira_resposta: datetime | None
     data_conclusao: datetime | None
+
+    class Config:
+        from_attributes = True
