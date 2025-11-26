@@ -133,6 +133,10 @@ def criar_chamado(payload: ChamadoCreate, db: Session = Depends(get_db)):
         # Sincroniza o chamado com a tabela de SLA
         _sincronizar_sla(db, ch)
 
+        # ATUALIZAÇÃO REAL-TIME: Incrementa contador de "chamados hoje"
+        from ti.services.cache_manager_incremental import ChamadosTodayCounter
+        chamados_hoje = ChamadosTodayCounter.increment(db)
+
         try:
             Notification.__table__.create(bind=engine, checkfirst=True)
             dados = json.dumps({
@@ -167,7 +171,16 @@ def criar_chamado(payload: ChamadoCreate, db: Session = Depends(get_db)):
                 "lido": n.lido,
                 "criado_em": n.criado_em.isoformat() if n.criado_em else None,
             })
-        except Exception:
+            # EMITE ATUALIZAÇÃO DE MÉTRICAS EM TEMPO REAL
+            from ti.services.cache_manager_incremental import IncrementalMetricsCache
+            metricas = IncrementalMetricsCache.get_metrics(db)
+            anyio.from_thread.run(sio.emit, "metrics:updated", {
+                "chamados_hoje": chamados_hoje,
+                "sla_metrics": metricas,
+                "timestamp": now_brazil_naive().isoformat(),
+            })
+        except Exception as e:
+            print(f"[WebSocket] Erro ao emitir eventos: {e}")
             pass
         try:
             send_async(send_chamado_abertura, ch)
