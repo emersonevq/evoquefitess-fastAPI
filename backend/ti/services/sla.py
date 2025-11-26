@@ -182,12 +182,12 @@ class SLACalculator:
     @staticmethod
     def get_sla_status(db: Session, chamado: Chamado) -> dict:
         """
-        Calcula o status de SLA de um chamado baseado no histórico de status.
+        Calcula o status de SLA de um chamado.
 
-        Usa a tabela historico_status para determinar:
-        - Data de primeira resposta (primeiro "Em Atendimento")
-        - Data de conclusão (primeiro "Concluído")
-        - Se está congelado (muito tempo em "Aguardando")
+        Usa:
+        - Chamado.data_primeira_resposta para data de primeira resposta (fonte confiável)
+        - Chamado.data_conclusao para data de conclusão
+        - Histórico de status para verificar se está congelado
         """
         sla_config = SLACalculator.get_sla_config_by_priority(db, chamado.prioridade)
 
@@ -213,8 +213,8 @@ class SLACalculator:
         tempo_resposta_horas = 0
         tempo_resposta_status = "ok"
 
-        # Procura primeira resposta no histórico
-        data_primeira_resposta = SLACalculator.get_first_response_date(db, chamado.id)
+        # Usa data_primeira_resposta da tabela chamado (fonte confiável)
+        data_primeira_resposta = chamado.data_primeira_resposta
 
         if data_primeira_resposta:
             # Já houve resposta
@@ -240,8 +240,8 @@ class SLACalculator:
             tempo_resolucao_status = "congelado"
             tempo_resolucao_horas = SLACalculator.calculate_business_hours(data_abertura, agora, db)
         else:
-            # Procura data de conclusão no histórico
-            data_conclusao = SLACalculator.get_completion_date(db, chamado.id)
+            # Usa data_conclusao da tabela chamado (fonte confiável)
+            data_conclusao = chamado.data_conclusao
 
             if data_conclusao:
                 # Já foi concluído
@@ -271,7 +271,7 @@ class SLACalculator:
             "tempo_resolucao_status": tempo_resolucao_status,
             "data_abertura": chamado.data_abertura,
             "data_primeira_resposta": data_primeira_resposta,
-            "data_conclusao": SLACalculator.get_completion_date(db, chamado.id),
+            "data_conclusao": data_conclusao,
         }
 
     @staticmethod
