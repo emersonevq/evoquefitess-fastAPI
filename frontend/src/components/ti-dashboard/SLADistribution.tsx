@@ -29,7 +29,7 @@ export function SLADistribution({ dentroDaSla, foraDaSla, loading }: SLADistribu
     { name: "Fora SLA", value: foraDaSla },
   ];
 
-  const COLORS = ["hsl(142, 70%, 50%)", "hsl(0, 84%, 55%)"];
+  const COLORS = ["#22c55e", "#ef4444"];
 
   return (
     <div className="rounded-xl border border-border/60 bg-card p-6">
