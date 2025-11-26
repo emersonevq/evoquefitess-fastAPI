@@ -3,6 +3,7 @@
 ## O Que Mudou?
 
 Seu sistema de SLA agora é:
+
 - ✅ **10x mais rápido** (com cache)
 - ✅ **Persistente** (não perde dados ao reiniciar)
 - ✅ **Automático** (invalida cache quando dados mudam)
@@ -15,7 +16,7 @@ Seu sistema de SLA agora é:
 Tudo funciona igual, mas agora mais rápido!
 
 ```
-1. Clique em "Painel Administrativo" 
+1. Clique em "Painel Administrativo"
 2. Espere ~2 segundos (cache se aquecendo)
 3. Dashboard carrega com métricas
 ```
@@ -86,6 +87,7 @@ curl -X POST http://localhost:8000/api/sla/cache/cleanup
 ### Ver Logs no Console
 
 **No Terminal (Backend)**:
+
 ```
 [CACHE] Cache do chamado #123 invalidado
 [SLA] Cache pré-aquecido com sucesso
@@ -93,6 +95,7 @@ curl -X POST http://localhost:8000/api/sla/cache/cleanup
 ```
 
 **No Browser Console (F12)**:
+
 ```
 [CACHE] Warmup concluído: 7 métricas em 1234ms
 [SLA] SLA recalculado e cache invalidado com sucesso
@@ -102,12 +105,12 @@ curl -X POST http://localhost:8000/api/sla/cache/cleanup
 
 ## 📊 Performance Before & After
 
-| Operação | Antes | Depois | Melhoria |
-|----------|-------|--------|----------|
-| Abrir dashboard | 8-12s | 1-2s | **6-12x** |
-| Editar chamado | 5-8s | 0.5-1s | **10x** |
-| Próximas cargas | 8-12s | 0.1-0.2s | **50-100x** |
-| Queries ao BD | 100+ | 3-4 | **30x menos** |
+| Operação        | Antes | Depois   | Melhoria      |
+| --------------- | ----- | -------- | ------------- |
+| Abrir dashboard | 8-12s | 1-2s     | **6-12x**     |
+| Editar chamado  | 5-8s  | 0.5-1s   | **10x**       |
+| Próximas cargas | 8-12s | 0.1-0.2s | **50-100x**   |
+| Queries ao BD   | 100+  | 3-4      | **30x menos** |
 
 ---
 
@@ -123,25 +126,29 @@ curl -X POST http://localhost:8000/api/sla/cache/cleanup
 ### Passos
 
 1. **Baixar código novo**
+
    ```bash
    git pull origin main
    ```
 
 2. **Instalar dependências** (se houver novas)
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Rodar validação**
+
    ```bash
    python backend/ti/scripts/validate_sla_system.py
    ```
 
 4. **Reiniciar serviço**
+
    ```bash
    # Docker
    docker compose restart backend
-   
+
    # Ou local
    systemctl restart seu-servico
    ```
@@ -198,13 +205,16 @@ python backend/ti/scripts/validate_sla_system.py
 ## 📅 Manutenção Regular
 
 ### Semanal
+
 - Nada (sistema cuida de si mesmo)
 
 ### Mensal
+
 - Executar `validate_sla_system.py` para check-up
 - Verificar se cache está funcionando: `curl .../api/sla/cache/stats`
 
 ### Trimestral
+
 - Revisar TTLs de cache (arquivo `backend/ti/services/sla_cache.py`)
 - Revisar limites de SLA (configurações)
 
@@ -286,6 +296,7 @@ Editar horário comercial → Invalida TUDO
 ## 🔐 Segurança
 
 Cache não armazena dados sensíveis, apenas métricas:
+
 - Números de chamados abertos
 - Percentuais de SLA
 - Tempos médios
@@ -323,6 +334,7 @@ Antes de usar em produção:
 ## 🎉 Pronto!
 
 Sistema de SLA agora está:
+
 - ✅ Rápido
 - ✅ Confiável
 - ✅ Automático

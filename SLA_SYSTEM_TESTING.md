@@ -3,28 +3,33 @@
 ## 📋 Resumo das Mudanças Implementadas
 
 ### 1. **Cache Persistente em Banco de Dados**
+
 - ✅ Novo `SLACacheManager` com persistência em `metrics_cache_db`
 - ✅ TTL inteligente por tipo de métrica (5min, 15min, 2min)
 - ✅ Cache em memória para performance + banco de dados para persistência
 - ✅ Limpeza automática de cache expirado
 
 ### 2. **Invalidação Inteligente de Cache**
+
 - ✅ Quando chamado é criado/alterado, cache relevante é automaticamente invalidado
 - ✅ Endpoints para invalidação seletiva (`/sla/cache/invalidate-chamado/{id}`)
 - ✅ Endpoints para invalidação geral (`/sla/cache/invalidate-all`)
 
 ### 3. **Pré-Aquecimento de Cache**
+
 - ✅ Endpoint `/sla/cache/warmup` calcula todas as métricas ao abrir painel
 - ✅ Hook frontend `useAutoRecalculateSLA` dispara warmup automaticamente
 - ✅ Timing otimizado com paralelização de queries
 
 ### 4. **Cálculos de SLA Corrigidos**
+
 - ✅ Sem problema N+1 (bulk loading de históricos)
 - ✅ Dedução correta de tempo em "Em análise"
 - ✅ Horas de negócio corretamente calculadas
 - ✅ Cache aplicado em múltiplos níveis
 
 ### 5. **Validação Robusta**
+
 - ✅ `SLAValidator` com validação de configurações
 - ✅ Endpoints `/sla/validate/*` para debug
 - ✅ Detecção de configurações inválidas
@@ -95,6 +100,7 @@ curl http://localhost:8000/api/sla/validate/chamado/1
 ```
 
 **Validar com:**
+
 ```bash
 # Stats deve mostrar entradas no banco
 curl http://localhost:8000/api/sla/cache/stats
@@ -119,6 +125,7 @@ curl http://localhost:8000/api/sla/cache/stats
 ```
 
 **Validar com:**
+
 ```bash
 # Stats deve mostrar entradas removidas
 curl http://localhost:8000/api/sla/cache/stats
@@ -138,6 +145,7 @@ curl http://localhost:8000/api/sla/cache/stats
 ```
 
 **Validar com:**
+
 ```bash
 # Histórico de SLA foi criado/atualizado
 curl http://localhost:8000/api/sla/historico/1
@@ -156,6 +164,7 @@ curl http://localhost:8000/api/sla/historico/1
 ```
 
 **Validar com:**
+
 ```bash
 # Verificar que stats mostra 0 entradas em memória
 curl http://localhost:8000/api/sla/cache/stats
@@ -194,6 +203,7 @@ time curl http://localhost:8000/api/metrics/dashboard
 ### Teste 3: Sem Problema N+1
 
 Verificar logs do database:
+
 - Ao calcular SLA compliance: máximo 3-4 queries (não centenas)
 - Bulk loading de históricos em 1 query em vez de 1 por chamado
 
@@ -275,6 +285,7 @@ curl http://localhost:8000/api/sla/validate/all
 ### Quando Modificar TTLs
 
 Aumentar se:
+
 - Dashboard carrega muito devagar (aumento de TTL)
 - Dados estão muito antigos (diminuir TTL)
 

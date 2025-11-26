@@ -22,12 +22,12 @@ Implementamos um sistema **robusto, rápido e confiável** com:
 
 ## 📊 Resultados
 
-| Métrica | Antes | Depois | Melhoria |
-|---------|-------|--------|----------|
-| **Primeira carga** | 8-12s | 1-2s | **6-12x mais rápido** |
-| **Com cache quente** | 8-12s | 100ms | **50-100x mais rápido** |
-| **Queries ao BD** | 100+ | 3-4 | **30x menos** |
-| **Cache persiste** | ❌ Não | ✅ Sim | **100% confiável** |
+| Métrica              | Antes  | Depois | Melhoria                |
+| -------------------- | ------ | ------ | ----------------------- |
+| **Primeira carga**   | 8-12s  | 1-2s   | **6-12x mais rápido**   |
+| **Com cache quente** | 8-12s  | 100ms  | **50-100x mais rápido** |
+| **Queries ao BD**    | 100+   | 3-4    | **30x menos**           |
+| **Cache persiste**   | ❌ Não | ✅ Sim | **100% confiável**      |
 
 ---
 
@@ -202,12 +202,12 @@ python backend/ti/scripts/validate_sla_system.py
 
 ## 📚 Documentação
 
-| Documento | Para Quem | Tempo |
-|-----------|-----------|-------|
-| `SLA_QUICK_START.md` | Usuários/Admins | 5 min |
-| `SLA_SYSTEM_TESTING.md` | QA/Devs | 30 min |
+| Documento                       | Para Quem       | Tempo  |
+| ------------------------------- | --------------- | ------ |
+| `SLA_QUICK_START.md`            | Usuários/Admins | 5 min  |
+| `SLA_SYSTEM_TESTING.md`         | QA/Devs         | 30 min |
 | `SLA_IMPLEMENTATION_SUMMARY.md` | Devs/Tech Leads | 20 min |
-| `SLA_SYSTEM_INDEX.md` | Todos | 10 min |
+| `SLA_SYSTEM_INDEX.md`           | Todos           | 10 min |
 
 ---
 
@@ -323,12 +323,12 @@ curl -X POST http://seu-site.com/api/sla/cache/warmup
 
 ## 📞 Suporte
 
-| Problema | Solução |
-|----------|---------|
-| Não entendo | Ler `SLA_QUICK_START.md` |
-| Quer testar | Ler `SLA_SYSTEM_TESTING.md` |
+| Problema      | Solução                             |
+| ------------- | ----------------------------------- |
+| Não entendo   | Ler `SLA_QUICK_START.md`            |
+| Quer testar   | Ler `SLA_SYSTEM_TESTING.md`         |
 | Quer detalhes | Ler `SLA_IMPLEMENTATION_SUMMARY.md` |
-| Erro ao usar | Rodar `validate_sla_system.py` |
+| Erro ao usar  | Rodar `validate_sla_system.py`      |
 
 ---
 
@@ -340,11 +340,11 @@ Sistema de SLA está **pronto para produção** com:
 ✅ **Confiabilidade**: Cache persistente  
 ✅ **Eficiência**: Sem problema N+1  
 ✅ **Automação**: Invalidação inteligente  
-✅ **Documentação**: Completa e didática  
+✅ **Documentação**: Completa e didática
 
 **🚀 Aproveite a velocidade!**
 
 ---
 
-*Implementação realizada em 2024*  
-*Sistema de SLA Robusto - Versão 1.0*
+_Implementação realizada em 2024_  
+_Sistema de SLA Robusto - Versão 1.0_

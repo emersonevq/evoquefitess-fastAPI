@@ -33,7 +33,7 @@ export function useSLACacheManager() {
       const stats = response.data as CacheWarmupStats;
 
       console.log(
-        `[CACHE] Warmup concluído: ${stats.total_calculados} métricas em ${stats.tempo_ms}ms`
+        `[CACHE] Warmup concluído: ${stats.total_calculados} métricas em ${stats.tempo_ms}ms`,
       );
 
       return stats;
@@ -44,19 +44,22 @@ export function useSLACacheManager() {
   }, []);
 
   // Invalida cache de um chamado específico
-  const invalidateChamado = useCallback(async (chamadoId: number) => {
-    try {
-      await api.post(`/sla/cache/invalidate-chamado/${chamadoId}`);
+  const invalidateChamado = useCallback(
+    async (chamadoId: number) => {
+      try {
+        await api.post(`/sla/cache/invalidate-chamado/${chamadoId}`);
 
-      // Invalida queries do React Query relacionadas
-      queryClient.invalidateQueries({ queryKey: ["sla-status-realtime"] });
-      queryClient.invalidateQueries({ queryKey: ["metrics-dashboard"] });
+        // Invalida queries do React Query relacionadas
+        queryClient.invalidateQueries({ queryKey: ["sla-status-realtime"] });
+        queryClient.invalidateQueries({ queryKey: ["metrics-dashboard"] });
 
-      console.log(`[CACHE] Cache do chamado #${chamadoId} invalidado`);
-    } catch (error) {
-      console.error(`[CACHE] Erro ao invalidar cache do chamado: ${error}`);
-    }
-  }, [queryClient]);
+        console.log(`[CACHE] Cache do chamado #${chamadoId} invalidado`);
+      } catch (error) {
+        console.error(`[CACHE] Erro ao invalidar cache do chamado: ${error}`);
+      }
+    },
+    [queryClient],
+  );
 
   // Invalida TODOS os caches (quando config de SLA muda)
   const invalidateAll = useCallback(async () => {
@@ -89,7 +92,9 @@ export function useSLACacheManager() {
   const cleanup = useCallback(async () => {
     try {
       const response = await api.post("/sla/cache/cleanup");
-      console.log(`[CACHE] Limpeza concluída: ${response.data.removed} entradas removidas`);
+      console.log(
+        `[CACHE] Limpeza concluída: ${response.data.removed} entradas removidas`,
+      );
       return response.data;
     } catch (error) {
       console.error("[CACHE] Erro ao limpar cache:", error);
