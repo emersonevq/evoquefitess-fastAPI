@@ -39,6 +39,7 @@ def get_sla_metrics(db: Session = Depends(get_db)):
     Retorna:
     - sla_compliance_24h: Percentual de SLA cumprido (ativos)
     - sla_compliance_mes: Percentual de SLA cumprido (todo o mês)
+    - sla_distribution: Distribuição dentro/fora SLA (sincronizado com sla_compliance_mes)
     - tempo_resposta_24h: Tempo médio de primeira resposta 24h
     - tempo_resposta_mes: Tempo médio de primeira resposta mês
     - total_chamados_mes: Total de chamados deste mês
@@ -46,10 +47,12 @@ def get_sla_metrics(db: Session = Depends(get_db)):
     try:
         tempo_resposta_mes, total_chamados_mes = MetricsCalculator.get_tempo_medio_resposta_mes(db)
         tempo_resposta_24h = MetricsCalculator.get_tempo_medio_resposta_24h(db)
+        sla_distribution = MetricsCalculator.get_sla_distribution(db)
 
         return {
             "sla_compliance_24h": MetricsCalculator.get_sla_compliance_24h(db),
             "sla_compliance_mes": MetricsCalculator.get_sla_compliance_mes(db),
+            "sla_distribution": sla_distribution,
             "tempo_resposta_24h": tempo_resposta_24h,
             "tempo_resposta_mes": tempo_resposta_mes,
             "total_chamados_mes": total_chamados_mes,
@@ -59,6 +62,13 @@ def get_sla_metrics(db: Session = Depends(get_db)):
         return {
             "sla_compliance_24h": 0,
             "sla_compliance_mes": 0,
+            "sla_distribution": {
+                "dentro_sla": 0,
+                "fora_sla": 0,
+                "percentual_dentro": 0,
+                "percentual_fora": 0,
+                "total": 0
+            },
             "tempo_resposta_24h": "—",
             "tempo_resposta_mes": "—",
             "total_chamados_mes": 0,
