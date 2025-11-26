@@ -26,9 +26,15 @@ class MetricsCalculator:
 
     @staticmethod
     def get_abertos_agora(db: Session) -> int:
-        """Retorna quantidade de chamados com status 'Aberto'"""
+        """
+        Retorna quantidade de chamados ATIVOS (não concluídos nem cancelados).
+        Equivalente a "todos" na página de gerenciar chamados.
+        """
         count = db.query(Chamado).filter(
-            Chamado.status == "Aberto"
+            and_(
+                Chamado.status != "Concluído",
+                Chamado.status != "Cancelado"
+            )
         ).count()
 
         return count
