@@ -5,6 +5,42 @@ from ti.models.chamado import Chamado
 from ti.models.historico_status import HistoricoStatus
 from ti.models.sla_config import HistoricoSLA, SLAConfiguration
 from core.utils import now_brazil_naive
+import threading
+
+
+class MetricsCache:
+    """Cache em memória para métricas pesadas com TTL"""
+    _cache = {}
+    _lock = threading.Lock()
+    _ttl_seconds = 30  # 30 segundos de cache
+
+    @classmethod
+    def get(cls, key: str):
+        """Obtém valor do cache se ainda estiver válido"""
+        with cls._lock:
+            if key in cls._cache:
+                value, timestamp = cls._cache[key]
+                age = (datetime.now() - timestamp).total_seconds()
+                if age < cls._ttl_seconds:
+                    return value
+                else:
+                    del cls._cache[key]
+        return None
+
+    @classmethod
+    def set(cls, key: str, value):
+        """Armazena valor no cache com timestamp"""
+        with cls._lock:
+            cls._cache[key] = (value, datetime.now())
+
+    @classmethod
+    def clear(cls, key: str = None):
+        """Limpa cache (específico ou tudo)"""
+        with cls._lock:
+            if key:
+                cls._cache.pop(key, None)
+            else:
+                cls._cache.clear()
 
 
 class MetricsCalculator:
