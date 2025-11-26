@@ -610,92 +610,171 @@ export default function ChamadosPage() {
         </div>
       </div>
 
-      {/* Tickets Grid com Scroll Infinito */}
+      {/* Tickets Grid/List com Scroll Infinito */}
       <div className="flex-1 overflow-hidden">
         <div
           ref={ticketsContainerRef}
           className="h-full overflow-y-auto pr-2 -mr-2"
         >
-          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 pb-4">
-            {list.slice(0, visibleTickets).map((t) => (
-              <div
-                key={t.id}
-                onClick={() => {
-                  setSelected(t);
-                  initFromSelected(t);
-                  setOpen(true);
-                }}
-                className="cursor-pointer transition-all hover:scale-105"
-              >
-                <TicketCard
-                  {...t}
-                  onTicket={() => {
+          {viewMode === "grid" && (
+            <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 pb-4">
+              {list.slice(0, visibleTickets).map((t) => (
+                <div
+                  key={t.id}
+                  onClick={() => {
                     setSelected(t);
                     initFromSelected(t);
-                    setTab("ticket");
                     setOpen(true);
                   }}
-                  onUpdate={async (id, sel) => {
-                    const statusText =
-                      sel === "ABERTO"
-                        ? "Aberto"
-                        : sel === "EM_ANDAMENTO"
-                          ? "Em andamento"
-                          : sel === "EM_ANALISE"
-                            ? "Em análise"
-                            : sel === "CONCLUIDO"
-                              ? "Concluído"
-                              : "Cancelado";
-                    try {
-                      const r = await apiFetch(`/chamados/${id}/status`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ status: statusText }),
-                      });
-                      if (!r.ok) throw new Error(await r.text());
-                      setItems((prev) =>
-                        prev.map((it) =>
-                          it.id === id ? { ...it, status: sel } : it,
-                        ),
-                      );
-                      if (selected && selected.id === id) {
-                        const hist = await apiFetch(
-                          `/chamados/${id}/historico`,
-                        ).then((x) => x.json());
-                        const arr = hist.items.map((it: any) => ({
-                          t: new Date(it.t).getTime(),
-                          label: it.label,
-                          attachments: it.anexos
-                            ? it.anexos.map((a: any) => a.nome_original)
-                            : undefined,
-                          files: it.anexos
-                            ? it.anexos.map((a: any) => ({
-                                name: a.nome_original,
-                                url: `${API_BASE.replace(/\/api$/, "")}/${a.caminho_arquivo}`,
-                                mime: a.mime_type || undefined,
-                              }))
-                            : undefined,
-                        }));
-                        setHistory(arr);
-                        setTab("historico");
+                  className="cursor-pointer transition-all hover:scale-105"
+                >
+                  <TicketCard
+                    {...t}
+                    onTicket={() => {
+                      setSelected(t);
+                      initFromSelected(t);
+                      setTab("ticket");
+                      setOpen(true);
+                    }}
+                    onUpdate={async (id, sel) => {
+                      const statusText =
+                        sel === "ABERTO"
+                          ? "Aberto"
+                          : sel === "EM_ANDAMENTO"
+                            ? "Em andamento"
+                            : sel === "EM_ANALISE"
+                              ? "Em análise"
+                              : sel === "CONCLUIDO"
+                                ? "Concluído"
+                                : "Cancelado";
+                      try {
+                        const r = await apiFetch(`/chamados/${id}/status`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ status: statusText }),
+                        });
+                        if (!r.ok) throw new Error(await r.text());
+                        setItems((prev) =>
+                          prev.map((it) =>
+                            it.id === id ? { ...it, status: sel } : it,
+                          ),
+                        );
+                        if (selected && selected.id === id) {
+                          const hist = await apiFetch(
+                            `/chamados/${id}/historico`,
+                          ).then((x) => x.json());
+                          const arr = hist.items.map((it: any) => ({
+                            t: new Date(it.t).getTime(),
+                            label: it.label,
+                            attachments: it.anexos
+                              ? it.anexos.map((a: any) => a.nome_original)
+                              : undefined,
+                            files: it.anexos
+                              ? it.anexos.map((a: any) => ({
+                                  name: a.nome_original,
+                                  url: `${API_BASE.replace(/\/api$/, "")}/${a.caminho_arquivo}`,
+                                  mime: a.mime_type || undefined,
+                                }))
+                              : undefined,
+                          }));
+                          setHistory(arr);
+                          setTab("historico");
+                        }
+                        toast({
+                          title: "Status atualizado",
+                          description: `Chamado alterado para: ${statusText}`,
+                        });
+                      } catch (e) {
+                        toast({
+                          title: "Erro",
+                          description: "Falha ao atualizar status",
+                          variant: "destructive",
+                        });
                       }
-                      toast({
-                        title: "Status atualizado",
-                        description: `Chamado alterado para: ${statusText}`,
-                      });
-                    } catch (e) {
-                      toast({
-                        title: "Erro",
-                        description: "Falha ao atualizar status",
-                        variant: "destructive",
-                      });
-                    }
+                    }}
+                    onDelete={(id) => setConfirmId(id)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {viewMode === "list" && (
+            <div className="space-y-2 pb-4">
+              {list.slice(0, visibleTickets).map((t) => (
+                <div
+                  key={t.id}
+                  onClick={() => {
+                    setSelected(t);
+                    initFromSelected(t);
+                    setOpen(true);
                   }}
-                  onDelete={(id) => setConfirmId(id)}
-                />
-              </div>
-            ))}
-          </div>
+                  className="rounded-lg border border-border/40 bg-card p-4 cursor-pointer transition-all hover:shadow-sm hover:border-border/60"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-sm">
+                            {t.codigo}
+                          </h3>
+                          <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                            {t.titulo}
+                          </p>
+                        </div>
+                        <StatusPill status={t.status} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs mt-3 sm:hidden">
+                        <div className="text-muted-foreground">Solicitante:</div>
+                        <div className="text-right">{t.solicitante}</div>
+                        <div className="text-muted-foreground">Problema:</div>
+                        <div className="text-right">{t.categoria}</div>
+                      </div>
+                    </div>
+
+                    <div className="hidden sm:grid grid-cols-4 gap-x-4 gap-y-1.5 text-xs flex-shrink-0 w-full sm:w-auto">
+                      <div>
+                        <div className="text-muted-foreground">Solicitante</div>
+                        <div className="text-right">{t.solicitante}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Problema</div>
+                        <div className="text-right">{t.categoria}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Unidade</div>
+                        <div className="text-right">{t.unidade}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Data</div>
+                        <div className="text-right">
+                          {new Date(t.criadoEm).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected(t);
+                          initFromSelected(t);
+                          setTab("ticket");
+                          setOpen(true);
+                        }}
+                        className="h-8 px-3"
+                      >
+                        <TicketIcon className="h-3.5 w-3.5 mr-1.5" />
+                        Abrir
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Sentinel para infinite scroll com loading */}
           {visibleTickets < list.length && (
