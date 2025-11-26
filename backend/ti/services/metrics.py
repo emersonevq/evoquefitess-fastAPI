@@ -403,11 +403,12 @@ class MetricsCalculator:
 
     @staticmethod
     def _calculate_sla_compliance_mes(db: Session) -> int:
-        """Cálculo real de SLA mensal - otimizado sem N+1"""
+        """Cálculo real de SLA mensal - otimizado sem N+1 e com cache de business hours"""
         start_time = time.time()
         try:
             from ti.services.sla import SLACalculator
             from ti.models.historico_status import HistoricoStatus
+            from ti.models.sla_config import SLABusinessHours
 
             agora = now_brazil_naive()
             mes_inicio = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -421,6 +422,20 @@ class MetricsCalculator:
 
             if not sla_configs:
                 return 0
+
+            # PRÉ-CARREGAR business hours de uma vez (evita queries em loop)
+            business_hours_cache = {}
+            for weekday in range(5):
+                bh_result = db.query(SLABusinessHours).filter(
+                    and_(
+                        SLABusinessHours.dia_semana == weekday,
+                        SLABusinessHours.ativo == True
+                    )
+                ).first()
+                if bh_result:
+                    business_hours_cache[weekday] = (bh_result.hora_inicio, bh_result.hora_fim)
+                else:
+                    business_hours_cache[weekday] = SLACalculator.DEFAULT_BUSINESS_HOURS.get(weekday)
 
             chamados_mes = db.query(Chamado).filter(
                 and_(
@@ -461,7 +476,8 @@ class MetricsCalculator:
                         chamado.data_abertura,
                         data_final,
                         db,
-                        historicos_cache
+                        historicos_cache,
+                        business_hours_cache
                     )
 
                     if tempo_resolucao_horas <= sla_config.tempo_resolucao_horas:
@@ -960,7 +976,7 @@ class MetricsCalculator:
 
     @staticmethod
     def _log_calculation(db: Session, calculation_type: str, chamados_count: int, execution_time_ms: float):
-        """Log da execução de c��lculos SLA para rastrear performance"""
+        """Log da execução de cálculos SLA para rastrear performance"""
         try:
             log_entry = db.query(SLACalculationLog).filter(
                 SLACalculationLog.calculation_type == calculation_type
