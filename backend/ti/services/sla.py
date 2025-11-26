@@ -59,7 +59,8 @@ class SLACalculator:
         chamado_id: int,
         start: datetime,
         end: datetime,
-        db: Session
+        db: Session,
+        historicos_cache: dict | None = None
     ) -> float:
         """
         Calcula horas de NEGÓCIO excluindo períodos em "Em análise".
@@ -69,6 +70,9 @@ class SLACalculator:
         2. Identifica períodos onde status = "Em análise"
         3. Subtrai horas em "Em análise" do total
 
+        Parâmetro historicos_cache: dict {chamado_id: [historicos]}
+        Se fornecido, evita queries ao banco (otimização para bulk)
+
         Retorna: horas de negócio SEM contar pausa
         """
         if start >= end:
@@ -77,19 +81,30 @@ class SLACalculator:
         # 1. Calcula tempo total em horas de negócio
         tempo_total = SLACalculator.calculate_business_hours(start, end, db)
 
-        # 2. Busca todos os períodos em "Em análise"
+        # 2. Busca períodos em "Em análise"
         from ti.models.historico_status import HistoricoStatus
 
-        historicos_analise = db.query(HistoricoStatus).filter(
-            and_(
-                HistoricoStatus.chamado_id == chamado_id,
-                HistoricoStatus.status.in_(["Em análise", "Em Análise"]),
-                HistoricoStatus.data_inicio.isnot(None),
-                HistoricoStatus.data_fim.isnot(None),
-                HistoricoStatus.data_inicio >= start,
-                HistoricoStatus.data_fim <= end,
-            )
-        ).all()
+        if historicos_cache and chamado_id in historicos_cache:
+            # Usa cache se disponível (bulk operation)
+            historicos_analise = [
+                h for h in historicos_cache[chamado_id]
+                if h.status.lower() in ["em análise", "em analise"]
+                and h.data_inicio and h.data_fim
+                and h.data_inicio >= start
+                and h.data_fim <= end
+            ]
+        else:
+            # Query ao banco (operação individual)
+            historicos_analise = db.query(HistoricoStatus).filter(
+                and_(
+                    HistoricoStatus.chamado_id == chamado_id,
+                    HistoricoStatus.status.in_(["Em análise", "Em Análise"]),
+                    HistoricoStatus.data_inicio.isnot(None),
+                    HistoricoStatus.data_fim.isnot(None),
+                    HistoricoStatus.data_inicio >= start,
+                    HistoricoStatus.data_fim <= end,
+                )
+            ).all()
 
         # 3. Subtrai horas em "Em análise"
         tempo_analise_total = 0.0
