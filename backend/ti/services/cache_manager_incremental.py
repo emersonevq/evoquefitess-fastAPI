@@ -73,41 +73,45 @@ class ChamadosTodayCounter:
         """Incrementa contador de chamados de hoje"""
         try:
             cache_key = ChamadosTodayCounter.get_cache_key_today()
-            
+
             # Obtém valor atual
             cached = db.query(MetricsCacheDB).filter(
                 MetricsCacheDB.cache_key == cache_key
             ).first()
-            
+
             # Se expirou (passou meia-noite), recalcula
             if not cached or (cached.expires_at and cached.expires_at <= now_brazil_naive()):
                 new_value = ChamadosTodayCounter._recalculate(db)
                 return new_value + count
-            
+
             # Incrementa o valor existente
             try:
                 current_value = int(json.loads(cached.cache_value))
             except:
                 current_value = 0
-            
+
             new_value = current_value + count
-            
+
             # Atualiza cache com expire à meia-noite
             agora = now_brazil_naive()
             proximo_dia = (agora + timedelta(days=1)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            
+
             cached.cache_value = json.dumps(new_value)
             cached.calculated_at = agora
             cached.expires_at = proximo_dia
             db.add(cached)
             db.commit()
-            
+
             return new_value
-        
+
         except Exception as e:
             print(f"[CACHE] Erro ao incrementar contador: {e}")
+            try:
+                db.rollback()
+            except:
+                pass
             return ChamadosTodayCounter._recalculate(db)
     
     @staticmethod
@@ -129,22 +133,31 @@ class ChamadosTodayCounter:
                 current_value = 0
             
             new_value = max(0, current_value - count)
-            
+
             agora = now_brazil_naive()
             proximo_dia = (agora + timedelta(days=1)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            
-            cached.cache_value = json.dumps(new_value)
-            cached.calculated_at = agora
-            cached.expires_at = proximo_dia
-            db.add(cached)
-            db.commit()
-            
+
+            try:
+                cached.cache_value = json.dumps(new_value)
+                cached.calculated_at = agora
+                cached.expires_at = proximo_dia
+                db.add(cached)
+                db.commit()
+            except Exception as commit_error:
+                db.rollback()
+                print(f"[CACHE] Erro ao commit decrement: {commit_error}")
+                raise
+
             return new_value
-        
+
         except Exception as e:
             print(f"[CACHE] Erro ao decrementar contador: {e}")
+            try:
+                db.rollback()
+            except:
+                pass
             return ChamadosTodayCounter._recalculate(db)
     
     @staticmethod
@@ -152,44 +165,53 @@ class ChamadosTodayCounter:
         """Recalcula contador de hoje a partir do banco de dados"""
         try:
             hoje = now_brazil_naive().replace(hour=0, minute=0, second=0, microsecond=0)
-            
+
             count = db.query(Chamado).filter(
                 and_(
                     Chamado.data_abertura >= hoje,
                     Chamado.status != "Cancelado"
                 )
             ).count()
-            
+
             # Salva no cache com expire à meia-noite
             cache_key = ChamadosTodayCounter.get_cache_key_today()
             agora = now_brazil_naive()
             proximo_dia = (agora + timedelta(days=1)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            
+
             cached = db.query(MetricsCacheDB).filter(
                 MetricsCacheDB.cache_key == cache_key
             ).first()
-            
-            if cached:
-                cached.cache_value = json.dumps(count)
-                cached.calculated_at = agora
-                cached.expires_at = proximo_dia
-                db.add(cached)
-            else:
-                cached = MetricsCacheDB(
-                    cache_key=cache_key,
-                    cache_value=json.dumps(count),
-                    calculated_at=agora,
-                    expires_at=proximo_dia,
-                )
-                db.add(cached)
-            
-            db.commit()
+
+            try:
+                if cached:
+                    cached.cache_value = json.dumps(count)
+                    cached.calculated_at = agora
+                    cached.expires_at = proximo_dia
+                    db.add(cached)
+                else:
+                    cached = MetricsCacheDB(
+                        cache_key=cache_key,
+                        cache_value=json.dumps(count),
+                        calculated_at=agora,
+                        expires_at=proximo_dia,
+                    )
+                    db.add(cached)
+
+                db.commit()
+            except Exception as commit_error:
+                db.rollback()
+                print(f"[CACHE] Erro ao commit recalculate: {commit_error}")
+
             return count
-        
+
         except Exception as e:
             print(f"[CACHE] Erro ao recalcular contador: {e}")
+            try:
+                db.rollback()
+            except:
+                pass
             return 0
 
 
@@ -393,25 +415,33 @@ class IncrementalMetricsCache:
             
             agora = now_brazil_naive()
             cache_value = json.dumps(metricas)
-            
-            if cached:
-                cached.cache_value = cache_value
-                cached.calculated_at = agora
-                cached.expires_at = expire_time
-                db.add(cached)
-            else:
-                cached = MetricsCacheDB(
-                    cache_key=cache_key,
-                    cache_value=cache_value,
-                    calculated_at=agora,
-                    expires_at=expire_time,
-                )
-                db.add(cached)
-            
-            db.commit()
+
+            try:
+                if cached:
+                    cached.cache_value = cache_value
+                    cached.calculated_at = agora
+                    cached.expires_at = expire_time
+                    db.add(cached)
+                else:
+                    cached = MetricsCacheDB(
+                        cache_key=cache_key,
+                        cache_value=cache_value,
+                        calculated_at=agora,
+                        expires_at=expire_time,
+                    )
+                    db.add(cached)
+
+                db.commit()
+            except Exception as commit_error:
+                db.rollback()
+                print(f"[CACHE] Erro ao commit métricas: {commit_error}")
         
         except Exception as e:
             print(f"[CACHE] Erro ao salvar métricas: {e}")
+            try:
+                db.rollback()
+            except:
+                pass
     
     @staticmethod
     def _save_chamado_status(
@@ -429,24 +459,32 @@ class IncrementalMetricsCache:
             
             expire_time = IncrementalMetricsCache.get_expire_time_for_month()
             agora = now_brazil_naive()
-            
+
             cache_value = json.dumps({"dentro_sla": dentro_sla})
-            
-            if cached:
-                cached.cache_value = cache_value
-                cached.calculated_at = agora
-                cached.expires_at = expire_time
-                db.add(cached)
-            else:
-                cached = MetricsCacheDB(
-                    cache_key=cache_key,
-                    cache_value=cache_value,
-                    calculated_at=agora,
-                    expires_at=expire_time,
-                )
-                db.add(cached)
-            
-            db.commit()
-        
+
+            try:
+                if cached:
+                    cached.cache_value = cache_value
+                    cached.calculated_at = agora
+                    cached.expires_at = expire_time
+                    db.add(cached)
+                else:
+                    cached = MetricsCacheDB(
+                        cache_key=cache_key,
+                        cache_value=cache_value,
+                        calculated_at=agora,
+                        expires_at=expire_time,
+                    )
+                    db.add(cached)
+
+                db.commit()
+            except Exception as commit_error:
+                db.rollback()
+                print(f"[CACHE] Erro ao commit status do chamado: {commit_error}")
+
         except Exception as e:
             print(f"[CACHE] Erro ao salvar status do chamado: {e}")
+            try:
+                db.rollback()
+            except:
+                pass

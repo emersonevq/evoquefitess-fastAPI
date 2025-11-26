@@ -14,20 +14,12 @@ class MetricsCalculator:
 
     @staticmethod
     def get_chamados_abertos_hoje(db: Session) -> int:
-        """Retorna quantidade de chamados abertos hoje"""
+        """Retorna quantidade de chamados abertos hoje (do cache incremental)"""
         try:
-            hoje = now_brazil_naive().replace(hour=0, minute=0, second=0, microsecond=0)
-
-            count = db.query(Chamado).filter(
-                and_(
-                    Chamado.data_abertura >= hoje,
-                    Chamado.status != "Cancelado"
-                )
-            ).count()
-
-            return count
+            from ti.services.cache_manager_incremental import ChamadosTodayCounter
+            return ChamadosTodayCounter.get_count(db)
         except Exception as e:
-            print(f"Erro ao contar chamados de hoje: {e}")
+            print(f"Erro ao obter contador de hoje: {e}")
             import traceback
             traceback.print_exc()
             return 0
@@ -529,6 +521,9 @@ class MetricsCalculator:
         cached = SLACacheManager.get(db, "sla_distribution")
         if cached is not None:
             print(f"[CACHE HIT] SLA Distribution: {cached}")
+            # Valida e extrai se estiver wrapped em {'value': ...}
+            if isinstance(cached, dict) and 'value' in cached and len(cached) == 1:
+                cached = cached['value']
             return cached
 
         print("[CACHE MISS] SLA Distribution calculando...")

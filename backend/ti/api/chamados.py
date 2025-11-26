@@ -76,7 +76,7 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
         # INVALIDAÇÃO DE CACHE: Quando um chamado é atualizado, invalida caches relacionados
         SLACacheManager.invalidate_by_chamado(db, chamado.id)
 
-        # ATUALIZAÇÃO INCREMENTAL DE MÉTRICAS: Recalcula apenas o chamado afetado
+        # ATUALIZA��ÃO INCREMENTAL DE MÉTRICAS: Recalcula apenas o chamado afetado
         from ti.services.cache_manager_incremental import IncrementalMetricsCache
         IncrementalMetricsCache.update_for_chamado(db, chamado.id)
 
@@ -591,6 +591,11 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
         db.commit()  # garante persistência do status antes dos logs
         db.refresh(ch)
 
+        # DECREMENTAR CONTADOR DE HOJE SE CANCELADO
+        if novo == "Cancelado" and prev != "Cancelado":
+            from ti.services.cache_manager_incremental import ChamadosTodayCounter
+            ChamadosTodayCounter.decrement(db, 1)
+
         # Sincroniza automaticamente com tabela de SLA
         _sincronizar_sla(db, ch, status_anterior=prev)
 
@@ -640,6 +645,14 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
                 "dados": n.dados,
                 "lido": n.lido,
                 "criado_em": n.criado_em.isoformat() if n.criado_em else None,
+            })
+
+            # EMITE ATUALIZAÇÃO DE MÉTRICAS EM TEMPO REAL (quando status muda)
+            from ti.services.cache_manager_incremental import IncrementalMetricsCache
+            metricas = IncrementalMetricsCache.get_metrics(db)
+            anyio.from_thread.run(sio.emit, "metrics:updated", {
+                "sla_metrics": metricas,
+                "timestamp": now_brazil_naive().isoformat(),
             })
         except Exception:
             db.rollback()
