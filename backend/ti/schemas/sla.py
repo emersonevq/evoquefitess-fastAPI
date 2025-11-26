@@ -73,14 +73,25 @@ class SLAConfigurationOut(BaseModel):
 
 
 class SLABusinessHoursCreate(BaseModel):
-    dia_semana: int = Field(..., ge=0, le=6, description="Dia da semana (0=segunda, 6=domingo)")
-    hora_inicio: str = Field(..., description="Hora de início (HH:MM)")
-    hora_fim: str = Field(..., description="Hora de término (HH:MM)")
+    dia_semana: int = Field(..., ge=0, le=6, description="Dia da semana (0=segunda a 4=sexta, 5=sábado, 6=domingo)")
+    hora_inicio: str = Field(..., description="Hora de início (HH:MM, ex: 08:00)")
+    hora_fim: str = Field(..., description="Hora de término (HH:MM, ex: 18:00)")
     ativo: bool = Field(True, description="Se o horário está ativo")
+
+    @validator("dia_semana")
+    def validate_dia_semana(cls, v):
+        """Valida dia da semana"""
+        if not isinstance(v, int):
+            raise ValueError("dia_semana deve ser um inteiro")
+        if v < 0 or v > 6:
+            raise ValueError("dia_semana deve estar entre 0 (segunda) e 6 (domingo)")
+        return v
 
     @validator("hora_inicio", "hora_fim")
     def validate_time_format(cls, v):
         """Valida formato HH:MM"""
+        if not isinstance(v, str):
+            raise ValueError("Horário deve ser string no formato HH:MM")
         try:
             parts = v.split(":")
             if len(parts) != 2:
@@ -98,6 +109,40 @@ class SLABusinessHoursCreate(BaseModel):
         if "hora_inicio" in values:
             hora_inicio = values["hora_inicio"]
             if v <= hora_inicio:
+                raise ValueError("Hora fim deve ser maior que hora início")
+        return v
+
+
+class SLABusinessHoursUpdate(BaseModel):
+    """Schema para atualização parcial de horários comerciais"""
+    dia_semana: int | None = Field(None, ge=0, le=6, description="Dia da semana")
+    hora_inicio: str | None = Field(None, description="Hora de início (HH:MM)")
+    hora_fim: str | None = Field(None, description="Hora de término (HH:MM)")
+    ativo: bool | None = Field(None, description="Se o horário está ativo")
+
+    @validator("hora_inicio", "hora_fim", pre=True)
+    def validate_time_format_optional(cls, v):
+        """Valida formato HH:MM quando fornecido"""
+        if v is None:
+            return v
+        if not isinstance(v, str):
+            raise ValueError("Horário deve ser string no formato HH:MM")
+        try:
+            parts = v.split(":")
+            if len(parts) != 2:
+                raise ValueError()
+            h, m = int(parts[0]), int(parts[1])
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                raise ValueError()
+        except (ValueError, AttributeError, IndexError):
+            raise ValueError(f"Formato inválido '{v}'. Use HH:MM (00:00 a 23:59)")
+        return v
+
+    @validator("hora_fim")
+    def validate_hora_fim_after_inicio_update(cls, v, values):
+        """Valida que hora_fim é maior que hora_inicio quando ambas são fornecidas"""
+        if v is not None and "hora_inicio" in values and values["hora_inicio"] is not None:
+            if v <= values["hora_inicio"]:
                 raise ValueError("Hora fim deve ser maior que hora início")
         return v
 
