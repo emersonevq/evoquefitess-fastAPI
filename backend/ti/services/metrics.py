@@ -521,6 +521,9 @@ class MetricsCalculator:
         cached = SLACacheManager.get(db, "sla_distribution")
         if cached is not None:
             print(f"[CACHE HIT] SLA Distribution: {cached}")
+            # Valida e extrai se estiver wrapped em {'value': ...}
+            if isinstance(cached, dict) and 'value' in cached and len(cached) == 1:
+                cached = cached['value']
             return cached
 
         print("[CACHE MISS] SLA Distribution calculando...")
