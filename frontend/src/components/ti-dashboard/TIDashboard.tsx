@@ -139,8 +139,8 @@ export function TIDashboard() {
         <WeeklyChart data={weeklyData} loading={loading} />
       </div>
 
-      {/* SLA Distribution and Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* SLA Distribution */}
+      <div className="grid grid-cols-1 gap-6">
         <SLADistribution
           dentroDaSla={slaData?.dentro_sla || 0}
           foraDaSla={slaData?.fora_sla || 0}
