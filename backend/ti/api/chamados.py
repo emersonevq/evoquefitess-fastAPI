@@ -33,6 +33,7 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
     """
     Função auxiliar para sincronizar um chamado com a tabela de histórico de SLA.
     Deve ser chamada sempre que um chamado é criado ou atualizado.
+    TAMBÉM invalida o cache automaticamente.
     """
     try:
         try:
@@ -71,8 +72,13 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
             db.add(historico)
 
         db.commit()
+
+        # INVALIDAÇÃO DE CACHE: Quando um chamado é atualizado, invalida caches relacionados
+        SLACacheManager.invalidate_by_chamado(db, chamado.id)
+
     except Exception as e:
         db.rollback()
+        print(f"[SLA SYNC] Erro ao sincronizar SLA do chamado {chamado.id}: {e}")
         pass
 
 
