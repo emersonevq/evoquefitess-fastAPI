@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   TrendingUp,
   Clock,
@@ -5,7 +6,9 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownRight,
+  Loader,
 } from "lucide-react";
+import { useMetrics } from "@/hooks/useMetrics";
 import {
   Bar,
   BarChart,
