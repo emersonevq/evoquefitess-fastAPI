@@ -33,7 +33,7 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
     """
     Função auxiliar para sincronizar um chamado com a tabela de histórico de SLA.
     Deve ser chamada sempre que um chamado é criado ou atualizado.
-    TAMBÉM invalida o cache automaticamente.
+    TAMBÉM invalida o cache automaticamente e atualiza métricas incrementalmente.
     """
     try:
         try:
@@ -75,6 +75,10 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
 
         # INVALIDAÇÃO DE CACHE: Quando um chamado é atualizado, invalida caches relacionados
         SLACacheManager.invalidate_by_chamado(db, chamado.id)
+
+        # ATUALIZAÇÃO INCREMENTAL DE MÉTRICAS: Recalcula apenas o chamado afetado
+        from ti.services.cache_manager_incremental import IncrementalMetricsCache
+        IncrementalMetricsCache.update_for_chamado(db, chamado.id)
 
     except Exception as e:
         db.rollback()
