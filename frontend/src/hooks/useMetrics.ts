@@ -45,12 +45,16 @@ export function useMetrics() {
       const socket = (window as any).__APP_SOCK__;
 
       if (!socket) {
-        console.debug("[useMetrics] WebSocket não disponível ainda, usando polling apenas");
+        console.debug(
+          "[useMetrics] WebSocket não disponível ainda, usando polling apenas",
+        );
         return;
       }
 
       const handleMetricsUpdated = () => {
-        console.debug("[useMetrics] Recebido evento metrics:updated, invalidando cache");
+        console.debug(
+          "[useMetrics] Recebido evento metrics:updated, invalidando cache",
+        );
         // Invalida query para forçar refetch imediato
         queryClient.invalidateQueries({ queryKey: ["metrics-dashboard"] });
       };
@@ -61,7 +65,10 @@ export function useMetrics() {
         socket.off("metrics:updated", handleMetricsUpdated);
       };
     } catch (error) {
-      console.debug("[useMetrics] Erro ao configurar listener WebSocket:", error);
+      console.debug(
+        "[useMetrics] Erro ao configurar listener WebSocket:",
+        error,
+      );
     }
   }, [queryClient]);
 
