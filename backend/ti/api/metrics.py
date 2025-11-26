@@ -220,35 +220,46 @@ def get_sla_distribution(db: Session = Depends(get_db)):
     try:
         dist = MetricsCalculator.get_sla_distribution(db)
 
-        # Validação de tipo
+        # Valida tipo esperado com exceção explícita
         if not isinstance(dist, dict):
-            return {
-                "dentro_sla": 0,
-                "fora_sla": 0,
-                "percentual_dentro": 0,
-                "percentual_fora": 0,
-                "total": 0
-            }
+            raise TypeError(f"sla_distribution deve retornar dict, recebido: {type(dist)}")
 
-        # Garante que todos os campos existem e são números
-        return {
-            "dentro_sla": int(dist.get("dentro_sla", 0)),
-            "fora_sla": int(dist.get("fora_sla", 0)),
-            "percentual_dentro": int(dist.get("percentual_dentro", 0)),
-            "percentual_fora": int(dist.get("percentual_fora", 0)),
-            "total": int(dist.get("total", 0))
-        }
-    except Exception as e:
-        print(f"Erro ao calcular distribuição de SLA: {e}")
+        # Valida estrutura obrigatória
+        required_keys = {"dentro_sla", "fora_sla", "percentual_dentro", "percentual_fora", "total"}
+        missing_keys = required_keys - set(dist.keys())
+        if missing_keys:
+            raise ValueError(f"sla_distribution falta chaves obrigatórias: {missing_keys}")
+
+        # Valida tipos de cada campo
+        if not all(isinstance(dist[k], int) for k in required_keys):
+            raise TypeError(f"Todos os campos de sla_distribution devem ser int")
+
+        # Valida ranges
+        if not (0 <= dist["percentual_dentro"] <= 100):
+            raise ValueError(f"percentual_dentro deve estar entre 0-100")
+        if not (0 <= dist["percentual_fora"] <= 100):
+            raise ValueError(f"percentual_fora deve estar entre 0-100")
+
+        return dist
+
+    except (TypeError, ValueError) as e:
+        print(f"[VALIDATION ERROR] Erro ao validar distribuição de SLA: {e}")
         import traceback
         traceback.print_exc()
-        return {
-            "dentro_sla": 0,
-            "fora_sla": 0,
-            "percentual_dentro": 0,
-            "percentual_fora": 0,
-            "total": 0
-        }
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao calcular distribuição de SLA: {str(e)}"
+        )
+    except Exception as e:
+        print(f"[ERROR] Erro inesperado ao calcular distribuição de SLA: {e}")
+        import traceback
+        traceback.print_exc()
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao calcular distribuição de SLA: {str(e)}"
+        )
 
 
 @router.get("/metrics/performance")
