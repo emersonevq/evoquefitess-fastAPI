@@ -212,14 +212,37 @@ class MetricsCalculator:
 
     @staticmethod
     def get_sla_compliance_24h(db: Session) -> int:
-        """Calcula percentual de SLA cumprido (baseado em chamados ativos)"""
+        """Calcula percentual de SLA cumprido (baseado em chamados ativos) - OTIMIZADO"""
+        # Tenta cache primeiro
+        cached = MetricsCache.get("sla_compliance_24h")
+        if cached is not None:
+            return cached
+
+        result = MetricsCalculator._calculate_sla_compliance_24h(db)
+        MetricsCache.set("sla_compliance_24h", result)
+        return result
+
+    @staticmethod
+    def _calculate_sla_compliance_24h(db: Session) -> int:
+        """Cálculo real de SLA 24h - otimizado sem N+1"""
         try:
             from ti.services.sla import SLACalculator
 
+            # 1. Carrega TODAS as configs de SLA de uma vez (não N+1)
+            sla_configs = {
+                config.prioridade: config
+                for config in db.query(SLAConfiguration).filter(
+                    SLAConfiguration.ativo == True
+                ).all()
+            }
+
+            if not sla_configs:
+                return 0
+
+            # 2. Busca chamados ativos
             chamados_ativos = db.query(Chamado).filter(
                 and_(
-                    Chamado.status != "Concluído",
-                    Chamado.status != "Cancelado"
+                    Chamado.status.notin_(["Concluído", "Concluido", "Cancelado"])
                 )
             ).all()
 
@@ -228,29 +251,40 @@ class MetricsCalculator:
 
             dentro_sla = 0
             fora_sla = 0
+            agora = now_brazil_naive()
 
+            # 3. Itera sem fazer queries adicionais
             for chamado in chamados_ativos:
                 try:
-                    sla_status = SLACalculator.get_sla_status(db, chamado)
-                    status_resolucao = sla_status.get("tempo_resolucao_status")
+                    sla_config = sla_configs.get(chamado.prioridade)
+                    if not sla_config:
+                        continue
 
-                    if status_resolucao in ("ok", "em_andamento", "congelado"):
+                    # Cálculo de resolução (sem chamar SLACalculator)
+                    data_final = chamado.data_conclusao if chamado.data_conclusao else agora
+                    tempo_decorrido = SLACalculator.calculate_business_hours(
+                        chamado.data_abertura,
+                        data_final,
+                        db
+                    )
+
+                    if tempo_decorrido <= sla_config.tempo_resolucao_horas:
                         dentro_sla += 1
-                    elif status_resolucao == "vencido":
+                    else:
                         fora_sla += 1
+
                 except Exception as e:
-                    print(f"Erro ao calcular SLA do chamado {chamado.id}: {e}")
+                    print(f"Erro ao processar chamado {chamado.id}: {e}")
                     continue
 
             total = dentro_sla + fora_sla
             if total == 0:
                 return 0
 
-            percentual = int((dentro_sla / total) * 100)
-            return percentual
+            return int((dentro_sla / total) * 100)
 
         except Exception as e:
-            print(f"Erro ao calcular SLA compliance: {e}")
+            print(f"Erro ao calcular SLA compliance 24h: {e}")
             import traceback
             traceback.print_exc()
             return 0
