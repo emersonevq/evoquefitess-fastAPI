@@ -98,9 +98,16 @@ const colorStyles = {
 
 export default function Overview() {
   const { data: metrics, isLoading: metricsLoading } = useMetrics();
-  const [dailyData, setDailyData] = useState<Array<{ day: string; abertos: number }>>([]);
-  const [weeklyData, setWeeklyData] = useState<Array<{ semana: string; chamados: number }>>([]);
-  const [slaData, setSLAData] = useState<{ dentro_sla: number; fora_sla: number }>({ dentro_sla: 0, fora_sla: 0 });
+  const [dailyData, setDailyData] = useState<
+    Array<{ day: string; abertos: number }>
+  >([]);
+  const [weeklyData, setWeeklyData] = useState<
+    Array<{ semana: string; chamados: number }>
+  >([]);
+  const [slaData, setSLAData] = useState<{
+    dentro_sla: number;
+    fora_sla: number;
+  }>({ dentro_sla: 0, fora_sla: 0 });
   const [performanceData, setPerformanceData] = useState<{
     tempo_resolucao_medio: string;
     primeira_resposta_media: string;
@@ -339,7 +346,8 @@ export default function Overview() {
                 { name: "Fora SLA", value: slaData.fora_sla },
               ].map((item, index) => {
                 const total = slaData.dentro_sla + slaData.fora_sla;
-                const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                const percentage =
+                  total > 0 ? Math.round((item.value / total) * 100) : 0;
                 return (
                   <div key={index} className="flex items-center gap-2">
                     <div
@@ -370,10 +378,26 @@ export default function Overview() {
                 </div>
               ) : (
                 [
-                  { label: "Tempo médio de resolução", value: performanceData.tempo_resolucao_medio, color: "orange" },
-                  { label: "Primeira resposta", value: performanceData.primeira_resposta_media, color: "blue" },
-                  { label: "Taxa de reaberturas", value: performanceData.taxa_reaberturas, color: "green" },
-                  { label: "Chamados em backlog", value: String(performanceData.chamados_backlog), color: "purple" },
+                  {
+                    label: "Tempo médio de resolução",
+                    value: performanceData.tempo_resolucao_medio,
+                    color: "orange",
+                  },
+                  {
+                    label: "Primeira resposta",
+                    value: performanceData.primeira_resposta_media,
+                    color: "blue",
+                  },
+                  {
+                    label: "Taxa de reaberturas",
+                    value: performanceData.taxa_reaberturas,
+                    color: "green",
+                  },
+                  {
+                    label: "Chamados em backlog",
+                    value: String(performanceData.chamados_backlog),
+                    color: "purple",
+                  },
                 ].map((item, i) => (
                   <div
                     key={i}
