@@ -119,12 +119,12 @@ class SLACalculator:
             historico = db.query(HistoricoStatus).filter(
                 and_(
                     HistoricoStatus.chamado_id == chamado_id,
-                    HistoricoStatus.status_novo.in_(["Em Atendimento", "Em análise"])
+                    HistoricoStatus.status.in_(["Em Atendimento", "Em análise", "Em andamento"])
                 )
-            ).order_by(HistoricoStatus.data_acao.asc()).first()
+            ).order_by(HistoricoStatus.data_inicio.asc()).first()
 
-            if historico and historico.data_acao:
-                return historico.data_acao
+            if historico and historico.data_inicio:
+                return historico.data_inicio
         except Exception:
             pass
         return None
@@ -139,12 +139,12 @@ class SLACalculator:
             historico = db.query(HistoricoStatus).filter(
                 and_(
                     HistoricoStatus.chamado_id == chamado_id,
-                    HistoricoStatus.status_novo.in_(["Concluído", "Concluido"])
+                    HistoricoStatus.status.in_(["Concluído", "Concluido"])
                 )
-            ).order_by(HistoricoStatus.data_acao.asc()).first()
+            ).order_by(HistoricoStatus.data_inicio.asc()).first()
 
-            if historico and historico.data_acao:
-                return historico.data_acao
+            if historico and historico.data_inicio:
+                return historico.data_inicio
         except Exception:
             pass
         return None
