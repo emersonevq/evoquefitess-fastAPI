@@ -234,6 +234,7 @@ class SLACalculator:
         # ===== CÁLCULO DE RESOLUÇÃO (SLA de Resolução) =====
         tempo_resolucao_horas = 0
         tempo_resolucao_status = "ok"
+        data_conclusao = None
 
         # Verifica se está congelado
         if SLACalculator.is_frozen(db, chamado.id, agora):
