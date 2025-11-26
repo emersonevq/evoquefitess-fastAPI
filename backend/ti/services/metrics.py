@@ -464,8 +464,9 @@ class MetricsCalculator:
         tempo_primeira_resposta_str = f"{int(tempo_primeira_resposta_medio)}m" if tempo_primeira_resposta_medio > 0 else "—"
 
         # Taxa de reaberturas
-        chamados_reabertos = sum(1 for c in chamados_30dias if c.reaberto and c.numero_reaberturas and c.numero_reaberturas > 0)
-        taxa_reaberturas = int((chamados_reabertos / len(chamados_30dias)) * 100) if chamados_30dias else 0
+        # Nota: O modelo Chamado não possui atributos de rastreamento de reaberturas
+        # Esta métrica seria calculada através de análise de histórico de status se necessário
+        taxa_reaberturas = 0
 
         # Chamados em backlog (status Aguardando ou Em análise ou Aberto)
         chamados_backlog = db.query(Chamado).filter(
