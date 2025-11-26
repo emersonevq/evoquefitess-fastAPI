@@ -115,37 +115,63 @@ const colorStyles = {
 };
 
 export default function Overview() {
+  const { data: metrics, isLoading } = useMetrics();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="relative group h-32 rounded-2xl bg-muted/50 animate-pulse flex items-center justify-center"
+            >
+              <Loader className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const comparacao = metrics?.comparacao_ontem || {
+    hoje: 0,
+    ontem: 0,
+    percentual: 0,
+    direcao: "up",
+  };
+
   return (
     <div className="space-y-6">
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Metric
           label="Chamados hoje"
-          value="18"
-          sub="+12% vs ontem"
+          value={String(metrics?.chamados_hoje || 0)}
+          sub={`${comparacao.percentual >= 0 ? "+" : ""}${comparacao.percentual}% vs ontem`}
           variant="orange"
           icon={TrendingUp}
-          trend="up"
+          trend={comparacao.direcao}
         />
         <Metric
           label="Tempo médio de resposta"
-          value="32min"
+          value={metrics?.tempo_resposta_24h || "—"}
           sub="Últimas 24h"
           variant="blue"
           icon={Clock}
         />
         <Metric
           label="SLA (30h)"
-          value="82%"
+          value={`${metrics?.sla_compliance_24h || 0}%`}
           sub="Dentro do acordo"
           variant="green"
           icon={CheckCircle2}
-          trend="up"
+          trend={metrics && metrics.sla_compliance_24h >= 80 ? "up" : "down"}
         />
         <Metric
           label="Abertos agora"
-          value="7"
-          sub="em andamento"
+          value={String(metrics?.abertos_agora || 0)}
+          sub="em aberto"
           variant="purple"
           icon={AlertCircle}
         />
