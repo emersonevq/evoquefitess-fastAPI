@@ -76,3 +76,58 @@ def get_sla_compliance(db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Erro ao calcular SLA compliance: {e}")
         return {"sla_compliance": 0}
+
+
+@router.get("/metrics/chamados-por-dia")
+def get_chamados_por_dia(dias: int = 7, db: Session = Depends(get_db)):
+    """Retorna quantidade de chamados por dia dos últimos N dias"""
+    try:
+        dados = MetricsCalculator.get_chamados_por_dia(db, dias)
+        return {"dados": dados}
+    except Exception as e:
+        print(f"Erro ao calcular chamados por dia: {e}")
+        return {"dados": []}
+
+
+@router.get("/metrics/chamados-por-semana")
+def get_chamados_por_semana(semanas: int = 4, db: Session = Depends(get_db)):
+    """Retorna quantidade de chamados por semana dos últimos N semanas"""
+    try:
+        dados = MetricsCalculator.get_chamados_por_semana(db, semanas)
+        return {"dados": dados}
+    except Exception as e:
+        print(f"Erro ao calcular chamados por semana: {e}")
+        return {"dados": []}
+
+
+@router.get("/metrics/sla-distribution")
+def get_sla_distribution(db: Session = Depends(get_db)):
+    """Retorna distribuição de SLA (dentro/fora do acordo)"""
+    try:
+        dist = MetricsCalculator.get_sla_distribution(db)
+        return dist
+    except Exception as e:
+        print(f"Erro ao calcular distribuição de SLA: {e}")
+        return {
+            "dentro_sla": 0,
+            "fora_sla": 0,
+            "percentual_dentro": 0,
+            "percentual_fora": 0,
+            "total": 0
+        }
+
+
+@router.get("/metrics/performance")
+def get_performance_metrics(db: Session = Depends(get_db)):
+    """Retorna métricas de performance (últimos 30 dias)"""
+    try:
+        metricas = MetricsCalculator.get_performance_metrics(db)
+        return metricas
+    except Exception as e:
+        print(f"Erro ao calcular métricas de performance: {e}")
+        return {
+            "tempo_resolucao_medio": "—",
+            "primeira_resposta_media": "—",
+            "taxa_reaberturas": "0%",
+            "chamados_backlog": 0
+        }
