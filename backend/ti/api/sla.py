@@ -347,8 +347,10 @@ def sincronizar_todos_chamados(db: Session = Depends(get_db)):
 def recalcular_sla_painel(db: Session = Depends(get_db)):
     """
     Recalcula todos os SLAs quando o painel administrativo é acessado.
-    Atualiza métricas para visualização correta.
+    Operação atômica: ou recalcula tudo ou não recalcula nada.
     """
+    from ti.services.sla_transaction_manager import SLATransactionManager
+
     try:
         try:
             HistoricoSLA.__table__.create(bind=engine, checkfirst=True)
@@ -356,35 +358,36 @@ def recalcular_sla_painel(db: Session = Depends(get_db)):
         except Exception:
             pass
 
-        stats = {
-            "total_recalculados": 0,
-            "em_dia": 0,
-            "vencidos": 0,
-            "em_andamento": 0,
-            "congelados": 0,
-            "erros": 0,
-        }
+        def _recalcular_impl(db_session: Session) -> dict:
+            """Implementação do recálculo"""
+            stats = {
+                "total_recalculados": 0,
+                "em_dia": 0,
+                "vencidos": 0,
+                "em_andamento": 0,
+                "congelados": 0,
+                "erros": 0,
+            }
 
-        chamados = db.query(Chamado).filter(
-            and_(
-                Chamado.status != "Cancelado",
-                Chamado.status != "Concluído"
-            )
-        ).all()
+            chamados = db_session.query(Chamado).filter(
+                and_(
+                    Chamado.status != "Cancelado",
+                    Chamado.status != "Concluído"
+                )
+            ).all()
 
-        for chamado in chamados:
-            try:
-                sla_status = SLACalculator.get_sla_status(db, chamado)
+            for chamado in chamados:
+                sla_status = SLACalculator.get_sla_status(db_session, chamado)
 
                 # Atualiza ou cria histórico com cálculo atual
-                existing = db.query(HistoricoSLA).filter(
+                existing = db_session.query(HistoricoSLA).filter(
                     HistoricoSLA.chamado_id == chamado.id
                 ).order_by(HistoricoSLA.criado_em.desc()).first()
 
                 if existing:
                     existing.tempo_resolucao_horas = sla_status.get("tempo_resolucao_horas")
                     existing.status_sla = sla_status.get("tempo_resolucao_status")
-                    db.add(existing)
+                    db_session.add(existing)
                 else:
                     historico = HistoricoSLA(
                         chamado_id=chamado.id,
@@ -396,7 +399,7 @@ def recalcular_sla_painel(db: Session = Depends(get_db)):
                         status_sla=sla_status.get("tempo_resolucao_status"),
                         criado_em=now_brazil_naive(),
                     )
-                    db.add(historico)
+                    db_session.add(historico)
 
                 stats["total_recalculados"] += 1
 
@@ -410,14 +413,22 @@ def recalcular_sla_painel(db: Session = Depends(get_db)):
                 elif status_sla == "congelado":
                     stats["congelados"] += 1
 
-            except Exception as e:
-                print(f"Erro ao recalcular SLA do chamado {chamado.id}: {e}")
-                stats["erros"] += 1
-                db.rollback()
+            return stats
 
-        db.commit()
-        return stats
+        # Executa com transação atômica
+        result = SLATransactionManager.execute_with_lock(
+            db,
+            "historico_sla",
+            _recalcular_impl
+        )
 
+        if result.success:
+            return result.data
+        else:
+            raise HTTPException(status_code=500, detail=result.error)
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao recalcular SLAs: {e}")
 
