@@ -116,50 +116,40 @@ export default function Overview() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        const fetchWithTimeout = (path: string, timeout = 5000) => {
-          return Promise.race([
-            api.get(path),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Timeout")), timeout)
-            ),
-          ]);
-        };
-
-        const results = await Promise.allSettled([
-          fetchWithTimeout("/metrics/dashboard"),
-          fetchWithTimeout("/metrics/chamados-por-dia"),
-          fetchWithTimeout("/metrics/chamados-por-semana"),
-          fetchWithTimeout("/metrics/sla-distribution"),
-          fetchWithTimeout("/metrics/performance"),
+        const [daily, weekly, sla, performance, dashboard] = await Promise.all([
+          api.get("/metrics/chamados-por-dia").catch(() => ({ data: { dados: [] } })),
+          api.get("/metrics/chamados-por-semana").catch(() => ({ data: { dados: [] } })),
+          api.get("/metrics/sla-distribution").catch(() => ({ data: { dentro_sla: 0, fora_sla: 0 } })),
+          api.get("/metrics/performance").catch(() => ({ data: null })),
+          api.get("/metrics/dashboard").catch(() => ({ data: null })),
         ]);
 
-        if (results[0].status === "fulfilled") {
-          setMetrics(results[0].value.data);
-        }
-        if (results[1].status === "fulfilled") {
-          setDailyData(results[1].value.data?.dados || []);
-        }
-        if (results[2].status === "fulfilled") {
-          setWeeklyData(results[2].value.data?.dados || []);
-        }
-        if (results[3].status === "fulfilled") {
-          setSLAData(results[3].value.data || { dentro_sla: 0, fora_sla: 0 });
-        }
-        if (results[4].status === "fulfilled") {
-          setPerformanceData(results[4].value.data);
-        }
+        if (!mounted) return;
+
+        setDailyData(daily.data?.dados || []);
+        setWeeklyData(weekly.data?.dados || []);
+        setSLAData(sla.data || { dentro_sla: 0, fora_sla: 0 });
+        setPerformanceData(performance.data);
+        setMetrics(dashboard.data);
       } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (isLoading) {
