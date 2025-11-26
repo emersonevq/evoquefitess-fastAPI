@@ -767,25 +767,19 @@ export default function ChamadosPage() {
                           <div className="text-xs font-medium text-muted-foreground mb-1">
                             Problema
                           </div>
-                          <div className="text-sm truncate">
-                            {t.categoria}
-                          </div>
+                          <div className="text-sm truncate">{t.categoria}</div>
                         </div>
                         <div className="hidden sm:block">
                           <div className="text-xs font-medium text-muted-foreground mb-1">
                             Unidade
                           </div>
-                          <div className="text-sm truncate">
-                            {t.unidade}
-                          </div>
+                          <div className="text-sm truncate">{t.unidade}</div>
                         </div>
                         <div className="hidden sm:block">
                           <div className="text-xs font-medium text-muted-foreground mb-1">
                             E-mail
                           </div>
-                          <div className="text-sm truncate">
-                            {t.email}
-                          </div>
+                          <div className="text-sm truncate">{t.email}</div>
                         </div>
                       </div>
                     </div>

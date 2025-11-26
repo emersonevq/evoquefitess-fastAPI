@@ -805,7 +805,9 @@ export function Permissoes() {
       >
         {loading && (
           <div className="text-center py-12">
-            <div className="text-sm text-muted-foreground">Carregando usuários...</div>
+            <div className="text-sm text-muted-foreground">
+              Carregando usuários...
+            </div>
           </div>
         )}
 
@@ -890,15 +892,13 @@ export function Permissoes() {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={async () => {
-                          if (!confirm(`Deslogar o usuário ${u.nome}?`))
-                            return;
+                          if (!confirm(`Deslogar o usuário ${u.nome}?`)) return;
                           try {
                             const res = await fetch(
                               `/api/usuarios/${u.id}/logout`,
                               { method: "POST" },
                             );
-                            if (!res.ok)
-                              throw new Error("Falha ao deslogar");
+                            if (!res.ok) throw new Error("Falha ao deslogar");
                             window.dispatchEvent(
                               new CustomEvent("users:changed"),
                             );
@@ -907,9 +907,7 @@ export function Permissoes() {
                             );
                             alert("Usuário deslogado com sucesso.");
                           } catch (e: any) {
-                            alert(
-                              e?.message || "Erro ao deslogar usuário",
-                            );
+                            alert(e?.message || "Erro ao deslogar usuário");
                           }
                         }}
                       >
@@ -995,19 +993,14 @@ export function Permissoes() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={async () => {
-                            if (
-                              !confirm(
-                                `Deslogar o usuário ${u.nome}?`,
-                              )
-                            )
+                            if (!confirm(`Deslogar o usuário ${u.nome}?`))
                               return;
                             try {
                               const res = await fetch(
                                 `/api/usuarios/${u.id}/logout`,
                                 { method: "POST" },
                               );
-                              if (!res.ok)
-                                throw new Error("Falha ao deslogar");
+                              if (!res.ok) throw new Error("Falha ao deslogar");
                               window.dispatchEvent(
                                 new CustomEvent("users:changed"),
                               );
@@ -1016,9 +1009,7 @@ export function Permissoes() {
                               );
                               alert("Usuário deslogado com sucesso.");
                             } catch (e: any) {
-                              alert(
-                                e?.message || "Erro ao deslogar usuário",
-                              );
+                              alert(e?.message || "Erro ao deslogar usuário");
                             }
                           }}
                         >
@@ -1042,19 +1033,14 @@ export function Permissoes() {
         )}
 
         {!loading && users.length > 0 && (
-          <div
-            ref={loadMoreUsersRef}
-            className="flex justify-center py-8 mt-4"
-          >
+          <div ref={loadMoreUsersRef} className="flex justify-center py-8 mt-4">
             {isLoadingMore && (
               <div className="text-sm text-muted-foreground">
                 Carregando mais usuários...
               </div>
             )}
             {visibleUsers >= users.length && (
-              <div className="text-xs text-muted-foreground">
-                Fim da lista
-              </div>
+              <div className="text-xs text-muted-foreground">Fim da lista</div>
             )}
           </div>
         )}

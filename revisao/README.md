@@ -7,6 +7,7 @@ Pasta contendo todos os arquivos relacionados ao cálculo e gerenciamento de SLA
 ### Backend - Cálculos e Lógica
 
 #### `backend_ti_services_sla.py`
+
 - **Classe**: `SLACalculator`
 - **Responsabilidades principais**:
   - `calculate_business_hours()` - Calcula horas úteis entre duas datas
@@ -20,6 +21,7 @@ Pasta contendo todos os arquivos relacionados ao cálculo e gerenciamento de SLA
 - **Linguagem**: Python
 
 #### `backend_ti_services_sla_cache.py`
+
 - **Classe**: `SLACacheManager`
 - **Responsabilidades principais**:
   - `get()` / `set()` - Cache em memória + banco de dados
@@ -40,6 +42,7 @@ Pasta contendo todos os arquivos relacionados ao cálculo e gerenciamento de SLA
 - **Linguagem**: Python
 
 #### `backend_ti_services_metrics.py`
+
 - **Classe**: `MetricsCalculator`
 - **Responsabilidades principais**:
   - `get_sla_compliance_24h()` / `_calculate_sla_compliance_24h()` - % SLA das últimas 24h
@@ -58,6 +61,7 @@ Pasta contendo todos os arquivos relacionados ao cálculo e gerenciamento de SLA
 - **Linguagem**: Python
 
 #### `backend_ti_services_sla_validator.py`
+
 - **Classe**: `SLAValidator`
 - **Responsabilidades principais**:
   - `validar_configuracao()` - Valida config de SLA individual
@@ -123,6 +127,7 @@ API endpoints → Frontend
 ## 🔧 Arquivo para Revisão
 
 Recomendações para revisão:
+
 1. Verificar lógica de exclusão de "Em análise" em `calculate_business_hours_excluding_paused()`
 2. Validar TTLs de cache versus frequência de atualizações
 3. Testar performance com grandes volumes (1000+ chamados)
