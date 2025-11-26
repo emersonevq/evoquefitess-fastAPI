@@ -10,6 +10,7 @@ from .historico_status import HistoricoStatus
 from .historico_anexo import HistoricoAnexo
 from .media import Media
 from .alert import Alert
+from .metrics_cache import MetricsCacheDB, SLACalculationLog
 __all__ = [
     "Chamado",
     "User",
@@ -23,4 +24,6 @@ __all__ = [
     "HistoricoAnexo",
     "Media",
     "Alert",
+    "MetricsCacheDB",
+    "SLACalculationLog",
 ]
