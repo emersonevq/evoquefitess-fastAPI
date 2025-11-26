@@ -122,7 +122,23 @@ export default function Overview() {
       try {
         setIsLoading(true);
 
-        const [daily, weekly, sla, performance, dashboard] = await Promise.all([
+        // Carrega métricas RÁPIDAS primeiro
+        const basicMetrics = await api
+          .get("/metrics/dashboard/basic")
+          .catch(() => ({
+            data: {
+              chamados_hoje: 0,
+              comparacao_ontem: { hoje: 0, ontem: 0, percentual: 0, direcao: "up" },
+              abertos_agora: 0
+            }
+          }));
+
+        if (mounted) {
+          setMetrics(basicMetrics.data);
+        }
+
+        // Carrega gráficos e dados em paralelo
+        const [daily, weekly, sla, performance] = await Promise.all([
           api
             .get("/metrics/chamados-por-dia")
             .catch(() => ({ data: { dados: [] } })),
@@ -133,16 +149,35 @@ export default function Overview() {
             .get("/metrics/sla-distribution")
             .catch(() => ({ data: { dentro_sla: 0, fora_sla: 0 } })),
           api.get("/metrics/performance").catch(() => ({ data: null })),
-          api.get("/metrics/dashboard").catch(() => ({ data: null })),
         ]);
 
-        if (!mounted) return;
+        if (mounted) {
+          setDailyData(daily.data?.dados || []);
+          setWeeklyData(weekly.data?.dados || []);
+          setSLAData(sla.data || { dentro_sla: 0, fora_sla: 0 });
+          setPerformanceData(performance.data);
+        }
 
-        setDailyData(daily.data?.dados || []);
-        setWeeklyData(weekly.data?.dados || []);
-        setSLAData(sla.data || { dentro_sla: 0, fora_sla: 0 });
-        setPerformanceData(performance.data);
-        setMetrics(dashboard.data);
+        // Carrega métricas de SLA (mais lentas) por último com cache
+        const slaMetrics = await api
+          .get("/metrics/dashboard/sla")
+          .catch(() => ({
+            data: {
+              sla_compliance_24h: 0,
+              sla_compliance_mes: 0,
+              tempo_resposta_24h: "—",
+              tempo_resposta_mes: "—",
+              total_chamados_mes: 0
+            }
+          }));
+
+        if (mounted) {
+          // Merge das métricas básicas com SLA
+          setMetrics((prev) => ({
+            ...prev,
+            ...slaMetrics.data,
+          }));
+        }
       } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
       } finally {
