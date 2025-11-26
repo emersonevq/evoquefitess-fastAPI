@@ -89,46 +89,36 @@ class MetricsCalculator:
 
     @staticmethod
     def get_tempo_medio_resposta_24h(db: Session) -> str:
-        """Calcula tempo médio de PRIMEIRA resposta das últimas 24h"""
+        """Calcula tempo médio de PRIMEIRA resposta das últimas 24h em horas de negócio"""
+        from ti.services.sla import SLACalculator
+
         agora = now_brazil_naive()
         ontem = agora - timedelta(hours=24)
 
         try:
-            # Subquery para pegar apenas a PRIMEIRA resposta por chamado nas últimas 24h
-            subquery = db.query(
-                HistoricoStatus.chamado_id,
-                func.min(HistoricoStatus.created_at).label('primeira_resposta_at')
-            ).filter(
+            # Busca chamados das últimas 24h que tiveram primeira resposta
+            chamados = db.query(Chamado).filter(
                 and_(
-                    HistoricoStatus.created_at >= ontem,
-                    HistoricoStatus.status.in_(["Em Atendimento", "Em análise", "Em andamento"])
+                    Chamado.data_abertura >= ontem,
+                    Chamado.status != "Cancelado",
+                    Chamado.data_primeira_resposta.isnot(None),
+                    Chamado.data_primeira_resposta >= ontem
                 )
-            ).group_by(HistoricoStatus.chamado_id).subquery()
-
-            # Busca os históricos da primeira resposta + dados do chamado (JOIN direto)
-            resultados = db.query(
-                HistoricoStatus.data_inicio,
-                Chamado.data_abertura
-            ).join(
-                subquery,
-                and_(
-                    HistoricoStatus.chamado_id == subquery.c.chamado_id,
-                    HistoricoStatus.created_at == subquery.c.primeira_resposta_at
-                )
-            ).join(
-                Chamado,
-                Chamado.id == HistoricoStatus.chamado_id
             ).all()
 
-            if not resultados:
+            if not chamados:
                 return "—"
 
-            # Calcula os tempos
+            # Calcula os tempos em horas de NEGÓCIO
             tempos = []
-            for data_inicio, data_abertura in resultados:
-                if data_inicio and data_abertura:
-                    delta = data_inicio - data_abertura
-                    horas = delta.total_seconds() / 3600
+            for chamado in chamados:
+                if chamado.data_primeira_resposta and chamado.data_abertura:
+                    # Usa horas de NEGÓCIO
+                    horas = SLACalculator.calculate_business_hours(
+                        chamado.data_abertura,
+                        chamado.data_primeira_resposta,
+                        db
+                    )
                     # Filtro de sanidade: apenas valores entre 0 e 72h
                     if 0 <= horas <= 72:
                         tempos.append(horas)
@@ -146,7 +136,7 @@ class MetricsCalculator:
                 minutos = int((media_horas - horas) * 60)
                 return f"{horas}h {minutos}m" if minutos > 0 else f"{horas}h"
         except Exception as e:
-            print(f"Erro ao calcular tempo de resposta: {e}")
+            print(f"Erro ao calcular tempo de resposta 24h: {e}")
             import traceback
             traceback.print_exc()
             return "—"
