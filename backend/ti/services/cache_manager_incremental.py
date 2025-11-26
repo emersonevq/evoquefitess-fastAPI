@@ -406,22 +406,26 @@ class IncrementalMetricsCache:
             
             agora = now_brazil_naive()
             cache_value = json.dumps(metricas)
-            
-            if cached:
-                cached.cache_value = cache_value
-                cached.calculated_at = agora
-                cached.expires_at = expire_time
-                db.add(cached)
-            else:
-                cached = MetricsCacheDB(
-                    cache_key=cache_key,
-                    cache_value=cache_value,
-                    calculated_at=agora,
-                    expires_at=expire_time,
-                )
-                db.add(cached)
-            
-            db.commit()
+
+            try:
+                if cached:
+                    cached.cache_value = cache_value
+                    cached.calculated_at = agora
+                    cached.expires_at = expire_time
+                    db.add(cached)
+                else:
+                    cached = MetricsCacheDB(
+                        cache_key=cache_key,
+                        cache_value=cache_value,
+                        calculated_at=agora,
+                        expires_at=expire_time,
+                    )
+                    db.add(cached)
+
+                db.commit()
+            except Exception as commit_error:
+                db.rollback()
+                print(f"[CACHE] Erro ao commit métricas: {commit_error}")
         
         except Exception as e:
             print(f"[CACHE] Erro ao salvar métricas: {e}")
