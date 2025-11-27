@@ -21,25 +21,30 @@ Quando o código tentava inserir um registro na tabela, havia um erro porque as 
 ### 1. Atualização dos Scripts de Schema
 
 **Arquivo: `backend/scripts/ensure_schema.py`**
+
 - Atualizado com as colunas corretas esperadas pelo ORM
 
 **Arquivo: `backend/scripts/azure_schema.sql`**
+
 - Atualizado para criar a tabela com a estrutura correta para novas instalações
 
 ### 2. Scripts de Migração Adicionados
 
 **Arquivo: `backend/ti/scripts/migrate_historico_status.py`**
+
 - Executa automaticamente na inicialização do backend
 - Detecta se a tabela tem estrutura antiga e migra automaticamente
 - Preserva dados históricos ao migrar
 
 **Arquivo: `backend/ti/scripts/check_historico_status.py`**
+
 - Script de diagnóstico para verificar a estrutura da tabela
 - Identifica problemas e sugere soluções
 
 ### 3. Integração Automática
 
 **Arquivo: `backend/main.py`**
+
 - Adicionada chamada automática da migração na inicialização
 - Garante que o banco está sempre com a estrutura correta
 
@@ -58,6 +63,7 @@ python backend/main.py
 ```
 
 A migração executará automaticamente e você verá uma mensagem como:
+
 ```
 ✅ Migração historico_status executada com sucesso
 ```
@@ -113,6 +119,7 @@ Se sua tabela teve a estrutura migrada, os dados antigos foram preservados:
 ```
 
 Os dados foram convertidos automaticamente:
+
 - `status_novo` → `status`
 - `data_mudanca` → `data_inicio`
 - `status_anterior + '→' + status_novo + motivo` → `descricao`
