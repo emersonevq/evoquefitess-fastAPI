@@ -41,6 +41,8 @@ class HistoricoSLA(Base):
     status_novo: Mapped[str | None] = mapped_column(String(50), nullable=True)
     data_conclusao_anterior: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     data_conclusao_nova: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    tempo_resposta_horas: Mapped[float | None] = mapped_column(Float, nullable=True)
+    limite_sla_resposta_horas: Mapped[float | None] = mapped_column(Float, nullable=True)
     tempo_resolucao_horas: Mapped[float | None] = mapped_column(Float, nullable=True)
     limite_sla_horas: Mapped[float | None] = mapped_column(Float, nullable=True)
     status_sla: Mapped[str | None] = mapped_column(String(50), nullable=True)
