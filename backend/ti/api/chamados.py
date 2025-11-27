@@ -492,6 +492,8 @@ def baixar_anexo_ticket(anexo_id: int, db: Session = Depends(get_db)):
     mime = res[3] or "application/octet-stream"
     headers = {"Content-Disposition": f"inline; filename={nome}"}
     return Response(content=res[4], media_type=mime, headers=headers)
+    
+    
 
 @router.get("/{chamado_id}/historico", response_model=HistoricoResponse)
 def obter_historico(chamado_id: int, db: Session = Depends(get_db)):
