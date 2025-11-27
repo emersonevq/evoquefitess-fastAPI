@@ -305,7 +305,7 @@ def obter_historico_sla(chamado_id: int, db: Session = Depends(get_db)):
 @router.post("/sync/todos-chamados")
 def sincronizar_todos_chamados(db: Session = Depends(get_db)):
     """
-    Sincroniza todos os chamados existentes com a tabela de histórico de SLA.
+    Sincroniza todos os chamados existentes com a tabela de hist��rico de SLA.
     Operação atômica: ou sincroniza tudo ou não sincroniza nada.
     """
     from ti.services.sla_transaction_manager import SLATransactionManager
@@ -468,14 +468,14 @@ def recalcular_sla_painel(db: Session = Depends(get_db)):
 
                 stats["total_recalculados"] += 1
 
-                status_sla = sla_status.get("status_geral", "sem_configuracao")
-                if status_sla == "ok":
+                status_sla = sla_status.get("status_geral", "sem_sla")
+                if status_sla in ["cumprido", "dentro_prazo"]:
                     stats["em_dia"] += 1
-                elif status_sla == "vencido":
+                elif status_sla in ["violado", "vencido_ativo"]:
                     stats["vencidos"] += 1
-                elif status_sla == "em_andamento":
+                elif status_sla == "proximo_vencer":
                     stats["em_andamento"] += 1
-                elif status_sla == "congelado":
+                elif status_sla == "pausado":
                     stats["congelados"] += 1
 
             return stats
