@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await loginWithRedirect({
         appState: { returnTo: window.location.pathname },
-        connection: "Microsoft-Evoque",
+        connection: "Portalevoquefitness",
       });
     } catch (error) {
       console.error("Erro ao fazer login com Auth0:", error);
