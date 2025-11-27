@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Edit2, RefreshCw, Grid3x3, List, Clock } from "lucide-react";
+import { Trash2, Plus, Edit2, RefreshCw, Grid3x3, List, Clock, Package } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
