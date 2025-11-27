@@ -169,6 +169,8 @@ class HistoricoSLAOut(BaseModel):
     status_novo: str | None
     data_conclusao_anterior: datetime | None
     data_conclusao_nova: datetime | None
+    tempo_resposta_horas: float | None
+    limite_sla_resposta_horas: float | None
     tempo_resolucao_horas: float | None
     limite_sla_horas: float | None
     status_sla: str | None
