@@ -1,10 +1,11 @@
 import { SLA as SLAConfig } from "./SLAConfig";
+import { PrioridadesProblemas } from "./PrioridadesProblemas";
 
 export function SLA() {
   return <SLAConfig />;
 }
 export function Prioridades() {
-  return <Panel title="Prioridades dos Problemas" />;
+  return <PrioridadesProblemas />;
 }
 export function Notificacoes() {
   return <Panel title="Notificações" />;
