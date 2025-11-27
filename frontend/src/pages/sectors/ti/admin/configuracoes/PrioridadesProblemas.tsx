@@ -97,44 +97,44 @@ export function PrioridadesProblemas() {
 
         console.log("Enviando PATCH com payload:", patchPayload);
 
-        const response = await apiFetch(`/problemas/${editingId}`, {
-          method: "PATCH",
-          body: JSON.stringify(patchPayload),
-        });
+        try {
+          await api.patch(`/problemas/${editingId}`, patchPayload);
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("Erro ao atualizar problema. Status:", response.status);
-          console.error("Response:", errorData);
+          toast({
+            title: "Sucesso",
+            description: "Problema atualizado com sucesso",
+          });
 
+          carregarProblemas();
+          setFormData({
+            nome: "",
+            prioridade: "Normal",
+            tempo_resolucao_horas: "",
+            requer_internet: false,
+          });
+          setOpen(false);
+          setEditingId(null);
+        } catch (error: any) {
           let errorMsg = "Falha ao atualizar problema";
-          if (errorData.detail) {
-            if (Array.isArray(errorData.detail)) {
-              errorMsg = errorData.detail.map((e: any) =>
-                e.msg || e || "Erro de validação"
+
+          if (error.response?.data?.detail) {
+            const detail = error.response.data.detail;
+            if (Array.isArray(detail)) {
+              errorMsg = detail.map((e: any) =>
+                typeof e === "string" ? e : (e.msg || "Erro de validação")
               ).join("; ");
             } else {
-              errorMsg = errorData.detail;
+              errorMsg = detail;
             }
           }
 
-          throw new Error(errorMsg);
+          console.error("Erro ao atualizar problema:", errorMsg);
+          toast({
+            title: "Erro",
+            description: errorMsg,
+            variant: "destructive",
+          });
         }
-
-        toast({
-          title: "Sucesso",
-          description: "Problema atualizado com sucesso",
-        });
-
-        carregarProblemas();
-        setFormData({
-          nome: "",
-          prioridade: "Normal",
-          tempo_resolucao_horas: "",
-          requer_internet: false,
-        });
-        setOpen(false);
-        setEditingId(null);
       } else {
         const response = await apiFetch("/problemas", {
           method: "POST",
