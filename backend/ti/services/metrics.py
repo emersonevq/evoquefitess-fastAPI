@@ -316,7 +316,8 @@ class MetricsCalculator:
                     Chamado.data_abertura >= mes_inicio,
                     Chamado.data_abertura <= agora,
                     Chamado.status != "Cancelado",
-                    Chamado.data_primeira_resposta.isnot(None)
+                    Chamado.data_primeira_resposta.isnot(None),
+                    Chamado.is_deleted == False
                 )
             ).all()
 
