@@ -325,6 +325,49 @@ function TicketForm({
     visita: "",
   });
 
+  const [problemas, setProblemas] = useState<Problema[]>([]);
+  const [problemaSelecionado, setProblemaSelecionado] = useState<Problema | null>(null);
+  const [loadingProblemas, setLoadingProblemas] = useState(true);
+
+  useEffect(() => {
+    const carregarProblemas = async () => {
+      try {
+        const data = await apiFetch("/problemas");
+        setProblemas(data || []);
+      } catch (error) {
+        console.error("Erro ao carregar problemas:", error);
+        setProblemas([]);
+      } finally {
+        setLoadingProblemas(false);
+      }
+    };
+
+    carregarProblemas();
+  }, []);
+
+  const handleProblemaChange = (problemaId: string) => {
+    const problema = problemas.find((p) => p.nome === problemaId);
+    setForm({ ...form, problema: problemaId });
+    setProblemaSelecionado(problema || null);
+  };
+
+  const formatTempo = (horas: number | null) => {
+    if (!horas) return null;
+    if (horas < 24) return `${horas}h`;
+    const dias = horas / 24;
+    return dias % 1 === 0 ? `${dias}d` : `${horas}h`;
+  };
+
+  const getPrioridadeColor = (prioridade: string) => {
+    const colors: Record<string, string> = {
+      Crítica: "text-red-600 dark:text-red-400",
+      Alta: "text-orange-600 dark:text-orange-400",
+      Normal: "text-blue-600 dark:text-blue-400",
+      Baixa: "text-green-600 dark:text-green-400",
+    };
+    return colors[prioridade] || colors.Normal;
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(form);
