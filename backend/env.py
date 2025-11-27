@@ -32,6 +32,11 @@ PASSWORD_MIN_LENGTH=6
 LOG_LEVEL=INFO
 LOG_FILE_PATH=logs/app.log
 
+# Configurações do Auth0 (Microsoft Office 365)
+AUTH0_DOMAIN=evoqueacademia.us.auth0.com
+AUTH0_AUDIENCE=https://erp-api.evoquefitness.com.br
+AUTH0_ISSUER_BASE_URL=https://evoqueacademia.us.auth0.com
+
 # Configurações de Backup
 BACKUP_PATH=backups/
 BACKUP_RETENTION_DAYS=30
