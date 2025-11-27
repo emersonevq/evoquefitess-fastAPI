@@ -28,7 +28,7 @@ Pasta contendo todos os arquivos relacionados ao cálculo e gerenciamento de SLA
   - `invalidate()` - Remove múltiplas chaves de cache
   - `invalidate_by_chamado()` - Invalida caches relacionados a um chamado
   - `invalidate_all_sla()` - Invalida todos os caches SLA
-  - `clear_expired()` - Limpa caches expirados
+  - `clear_expired()` - Limpa caches expiradosss
   - `get_stats()` - Retorna estatísticas do cache
 
 - **TTLs configurados**:
