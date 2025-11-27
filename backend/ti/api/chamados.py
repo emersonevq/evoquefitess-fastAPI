@@ -599,7 +599,14 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
             ch.data_conclusao = now_brazil_naive()
         db.add(ch)
         db.commit()  # garante persistência do status antes dos logs
-        db.refresh(ch)
+
+        # Capturar dados antes de detach
+        chamado_data = {
+            "id": ch.id,
+            "codigo": ch.codigo,
+            "protocolo": ch.protocolo,
+            "status": ch.status,
+        }
 
         # DECREMENTAR CONTADOR DE HOJE SE CANCELADO
         if novo == "Cancelado" and prev != "Cancelado":
@@ -609,6 +616,7 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
         # Sincroniza automaticamente com tabela de SLA
         _sincronizar_sla(db, ch, status_anterior=prev)
 
+        notification_data = None
         try:
             Notification.__table__.create(bind=engine, checkfirst=True)
             HistoricoTicket.__table__.create(bind=engine, checkfirst=True)
@@ -622,7 +630,7 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
             }, ensure_ascii=False)
             n = Notification(
                 tipo="chamado",
-                titulo=f"Status atualizado: {ch.codigo}",
+                titulo=f"Status atualizado: {chamado_data['codigo']}",
                 mensagem=f"{prev} → {ch.status}",
                 recurso="chamado",
                 recurso_id=ch.id,
@@ -640,11 +648,9 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
             )
             db.add(hs)
             db.commit()
-            db.refresh(n)
 
-            import anyio
-            anyio.from_thread.run(sio.emit, "chamado:status", {"id": ch.id, "status": ch.status})
-            anyio.from_thread.run(sio.emit, "notification:new", {
+            # Capturar dados da notificação antes de detach
+            notification_data = {
                 "id": n.id,
                 "tipo": n.tipo,
                 "titulo": n.titulo,
@@ -655,15 +661,26 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
                 "dados": n.dados,
                 "lido": n.lido,
                 "criado_em": n.criado_em.isoformat() if n.criado_em else None,
-            })
+            }
 
-            # EMITE ATUALIZAÇÃO DE MÉTRICAS EM TEMPO REAL (quando status muda)
-            from ti.services.cache_manager_incremental import IncrementalMetricsCache
-            metricas = IncrementalMetricsCache.get_metrics(db)
-            anyio.from_thread.run(sio.emit, "metrics:updated", {
-                "sla_metrics": metricas,
-                "timestamp": now_brazil_naive().isoformat(),
-            })
+            # Detach object from session before async operations
+            db.expunge(ch)
+            db.expunge(n)
+
+            try:
+                import anyio
+                anyio.from_thread.run(sio.emit, "chamado:status", {"id": chamado_data["id"], "status": chamado_data["status"]})
+                anyio.from_thread.run(sio.emit, "notification:new", notification_data)
+
+                # EMITE ATUALIZAÇÃO DE MÉTRICAS EM TEMPO REAL (quando status muda)
+                from ti.services.cache_manager_incremental import IncrementalMetricsCache
+                metricas = IncrementalMetricsCache.get_metrics(db)
+                anyio.from_thread.run(sio.emit, "metrics:updated", {
+                    "sla_metrics": metricas,
+                    "timestamp": now_brazil_naive().isoformat(),
+                })
+            except Exception:
+                pass
         except Exception:
             db.rollback()
             pass
