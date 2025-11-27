@@ -86,8 +86,6 @@ export function PrioridadesProblemas() {
         requer_internet: formData.requer_internet,
       };
 
-      console.log("Enviando payload:", payload);
-
       if (editingId) {
         const response = await apiFetch(`/problemas/${editingId}`, {
           method: "PATCH",
