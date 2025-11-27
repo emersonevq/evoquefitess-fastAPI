@@ -17,7 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Edit2, RefreshCw, Grid3x3, List, Clock, Package } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Edit2,
+  RefreshCw,
+  Grid3x3,
+  List,
+  Clock,
+  Package,
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -63,9 +72,13 @@ function SLAConfigCard({
   return (
     <div className="rounded-lg border border-border/60 bg-card overflow-hidden hover:shadow-md hover:border-primary/20 transition-all">
       <div className="px-4 py-3 border-b border-border/60 bg-muted/30 flex items-center justify-between">
-        <div className="font-semibold text-sm text-primary">{config.prioridade}</div>
+        <div className="font-semibold text-sm text-primary">
+          {config.prioridade}
+        </div>
         {config.descricao && (
-          <span className="text-xs text-muted-foreground">{config.descricao}</span>
+          <span className="text-xs text-muted-foreground">
+            {config.descricao}
+          </span>
         )}
       </div>
       <div className="p-4 space-y-3">
@@ -74,13 +87,17 @@ function SLAConfigCard({
             <div className="text-xs font-medium text-muted-foreground mb-1">
               Resposta
             </div>
-            <div className="text-lg font-semibold">{config.tempo_resposta_horas}h</div>
+            <div className="text-lg font-semibold">
+              {config.tempo_resposta_horas}h
+            </div>
           </div>
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-1">
               Resolução
             </div>
-            <div className="text-lg font-semibold">{config.tempo_resolucao_horas}h</div>
+            <div className="text-lg font-semibold">
+              {config.tempo_resolucao_horas}h
+            </div>
           </div>
         </div>
         <div className="pt-3 border-t border-border/40 flex gap-2">
@@ -107,7 +124,6 @@ function SLAConfigCard({
     </div>
   );
 }
-
 
 export function SLA() {
   const queryClient = useQueryClient();
@@ -404,7 +420,11 @@ export function SLA() {
             </Button>
             <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
               <DialogTrigger asChild>
-                <Button onClick={handleAddConfig} size="sm" className="gap-2 h-8">
+                <Button
+                  onClick={handleAddConfig}
+                  size="sm"
+                  className="gap-2 h-8"
+                >
                   <Plus className="w-4 h-4" />
                   Adicionar SLA
                 </Button>
@@ -510,7 +530,9 @@ export function SLA() {
                     <div className="p-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{config.prioridade}</h3>
+                          <h3 className="font-semibold text-sm">
+                            {config.prioridade}
+                          </h3>
                           {config.descricao && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {config.descricao}
@@ -690,7 +712,9 @@ export function SLA() {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => deleteHoursMutation.mutate(horasDia.id)}
+                            onClick={() =>
+                              deleteHoursMutation.mutate(horasDia.id)
+                            }
                             className="h-8 px-3"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

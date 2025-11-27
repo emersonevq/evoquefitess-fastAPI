@@ -64,20 +64,18 @@ export function AdicionarUnidade() {
             value={id}
             onChange={(e) => setId(e.target.value)}
           />
-          <Button
-            disabled={saving}
-            onClick={handleAdd}
-            className="h-10"
-          >
+          <Button disabled={saving} onClick={handleAdd} className="h-10">
             {saving ? "Salvando..." : "Adicionar"}
           </Button>
         </div>
         {msg && (
-          <div className={`text-xs px-3 py-2 rounded-md ${
-            msg.includes("sucesso") 
-              ? "bg-green-100/50 text-green-700 dark:bg-green-900/20 dark:text-green-300" 
-              : "bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
-          }`}>
+          <div
+            className={`text-xs px-3 py-2 rounded-md ${
+              msg.includes("sucesso")
+                ? "bg-green-100/50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                : "bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+            }`}
+          >
             {msg}
           </div>
         )}
@@ -86,18 +84,14 @@ export function AdicionarUnidade() {
   );
 }
 
-function UnidadeCard({
-  nome,
-  id,
-}: {
-  nome: string;
-  id: number;
-}) {
+function UnidadeCard({ nome, id }: { nome: string; id: number }) {
   return (
     <div className="rounded-lg border border-border/60 bg-card overflow-hidden hover:shadow-md hover:border-primary/20 transition-all">
       <div className="px-4 py-3 border-b border-border/60 bg-muted/30 flex items-center gap-2">
         <Package className="w-4 h-4 text-primary" />
-        <div className="font-semibold text-sm text-primary truncate">{nome}</div>
+        <div className="font-semibold text-sm text-primary truncate">
+          {nome}
+        </div>
       </div>
       <div className="p-4 space-y-2">
         <div className="flex items-center justify-between">
@@ -130,7 +124,8 @@ export function ListarUnidades() {
           <div>
             <h3 className="font-semibold text-sm">Unidades</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              {items.length} unidade{items.length !== 1 ? "s" : ""} cadastrada{items.length !== 1 ? "s" : ""}
+              {items.length} unidade{items.length !== 1 ? "s" : ""} cadastrada
+              {items.length !== 1 ? "s" : ""}
             </p>
           </div>
           <div className="flex gap-1 bg-muted rounded-lg p-1">
@@ -170,7 +165,11 @@ export function ListarUnidades() {
             {viewMode === "grid" && (
               <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {items.map((u) => (
-                  <UnidadeCard key={`${u.id}-${u.nome}`} id={u.id} nome={u.nome} />
+                  <UnidadeCard
+                    key={`${u.id}-${u.nome}`}
+                    id={u.id}
+                    nome={u.nome}
+                  />
                 ))}
               </div>
             )}
@@ -212,14 +211,19 @@ function ProblemaCard({
     Normal: "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300",
     Alta: "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
     Crítica: "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300",
-    Baixa: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300",
+    Baixa:
+      "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300",
   } as Record<string, string>;
 
   return (
     <div className="rounded-lg border border-border/60 bg-card overflow-hidden hover:shadow-md hover:border-primary/20 transition-all">
       <div className="px-4 py-3 border-b border-border/60 bg-muted/30 flex items-center gap-2 justify-between">
-        <div className="font-semibold text-sm text-primary truncate">{nome}</div>
-        <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 whitespace-nowrap ${priorityColor[prioridade] || priorityColor.Normal}`}>
+        <div className="font-semibold text-sm text-primary truncate">
+          {nome}
+        </div>
+        <span
+          className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 whitespace-nowrap ${priorityColor[prioridade] || priorityColor.Normal}`}
+        >
           {prioridade}
         </span>
       </div>
@@ -329,10 +333,7 @@ export function AdicionarBanco() {
               <option value="Crítica">Crítica</option>
               <option value="Baixa">Baixa</option>
             </select>
-            <Button
-              disabled={saving}
-              className="h-10"
-            >
+            <Button disabled={saving} className="h-10">
               <Plus className="w-4 h-4 mr-1" />
               {saving ? "Salvando..." : "Adicionar"}
             </Button>
@@ -414,7 +415,9 @@ export function AdicionarBanco() {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <Package className="w-4 h-4 text-primary flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-medium text-sm truncate">{p.nome}</h4>
+                          <h4 className="font-medium text-sm truncate">
+                            {p.nome}
+                          </h4>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {p.prioridade}
                             {p.requer_internet ? " • Internet" : ""}
