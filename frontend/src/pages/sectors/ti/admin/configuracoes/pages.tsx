@@ -1,7 +1,12 @@
 import { SLA as SLAConfig } from "./SLAConfig";
+import { PrioridadesProblemas as PrioridadesComponent } from "./PrioridadesProblemas";
 
 export function SLA() {
   return <SLAConfig />;
+}
+
+export function Prioridades() {
+  return <PrioridadesComponent />;
 }
 export function Notificacoes() {
   return <Panel title="Notificações" />;
