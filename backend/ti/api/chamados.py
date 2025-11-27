@@ -147,7 +147,7 @@ def listar_chamados(db: Session = Depends(get_db)):
         except Exception:
             pass
         try:
-            return db.query(Chamado).filter(Chamado.is_deleted == False).order_by(Chamado.id.desc()).all()
+            return db.query(Chamado).order_by(Chamado.id.desc()).all()
         except Exception:
             return []
     except Exception as e:
@@ -722,7 +722,7 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
                 "criado_em": n.criado_em.isoformat() if n.criado_em else None,
             })
 
-            # EMITE ATUALIZAÇ��O DE MÉTRICAS EM TEMPO REAL (quando status muda)
+            # EMITE ATUALIZAÇÃO DE MÉTRICAS EM TEMPO REAL (quando status muda)
             from ti.services.cache_manager_incremental import IncrementalMetricsCache
             metricas = IncrementalMetricsCache.get_metrics(db)
             anyio.from_thread.run(sio.emit, "metrics:updated", {
