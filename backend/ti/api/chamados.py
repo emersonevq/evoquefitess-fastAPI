@@ -760,7 +760,9 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest = Body(...), 
             raise HTTPException(status_code=401, detail="Senha inválida")
 
         # Buscar o chamado
-        ch = db.query(Chamado).filter(Chamado.id == chamado_id).first()
+        ch = db.query(Chamado).filter(
+            (Chamado.id == chamado_id) & (Chamado.deletado_em.is_(None))
+        ).first()
         if not ch:
             raise HTTPException(status_code=404, detail="Chamado não encontrado")
 
