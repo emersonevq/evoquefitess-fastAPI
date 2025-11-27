@@ -425,6 +425,13 @@ def enviar_ticket(
     db: Session = Depends(get_db),
 ):
     try:
+        # Verificar se o chamado existe e não foi deletado
+        chamado = db.query(Chamado).filter(
+            (Chamado.id == chamado_id) & (Chamado.deletado_em.is_(None))
+        ).first()
+        if not chamado:
+            raise HTTPException(status_code=404, detail="Chamado não encontrado")
+
         # garantir tabelas necessárias para anexos de ticket
         TicketAnexo.__table__.create(bind=engine, checkfirst=True)
         _ensure_column("ticket_anexos", "conteudo", "MEDIUMBLOB NULL")
