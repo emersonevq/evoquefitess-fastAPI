@@ -690,6 +690,10 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest = Body(...), 
         except Exception:
             pass
         try:
+            ChamadoTimeline.__table__.create(bind=engine, checkfirst=True)
+        except Exception:
+            pass
+        try:
             ChamadoAnexo.__table__.create(bind=engine, checkfirst=True)
         except Exception:
             pass
