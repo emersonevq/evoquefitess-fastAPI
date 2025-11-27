@@ -607,6 +607,18 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
             Notification.__table__.create(bind=engine, checkfirst=True)
             HistoricoTicket.__table__.create(bind=engine, checkfirst=True)
             HistoricoStatus.__table__.create(bind=engine, checkfirst=True)
+
+            # FECHAR HISTÓRICO ANTERIOR: Se o último status não tem data_fim, preencher
+            agora = now_brazil_naive()
+            ultimo_historico = db.query(HistoricoStatus).filter(
+                HistoricoStatus.chamado_id == ch.id
+            ).order_by(HistoricoStatus.data_inicio.desc()).first()
+
+            if ultimo_historico and not ultimo_historico.data_fim:
+                ultimo_historico.data_fim = agora
+                db.add(ultimo_historico)
+                db.commit()
+
             dados = json.dumps({
                 "id": ch.id,
                 "codigo": ch.codigo,
@@ -617,7 +629,7 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
             n = Notification(
                 tipo="chamado",
                 titulo=f"Status atualizado: {ch.codigo}",
-                mensagem=f"{prev} → {ch.status}",
+                mensagem=f"{prev} �� {ch.status}",
                 recurso="chamado",
                 recurso_id=ch.id,
                 acao="status",
@@ -629,7 +641,7 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
                 chamado_id=ch.id,
                 usuario_id=None,
                 status=ch.status,
-                data_inicio=now_brazil_naive(),
+                data_inicio=agora,
                 descricao=f"Migrado: {prev} → {ch.status}",
             )
             db.add(hs)
