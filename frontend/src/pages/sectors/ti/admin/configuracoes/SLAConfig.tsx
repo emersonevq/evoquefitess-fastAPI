@@ -17,7 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Edit2, RefreshCw } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Edit2,
+  RefreshCw,
+  Grid3x3,
+  List,
+  Clock,
+  Package,
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -51,12 +60,78 @@ const DIAS_SEMANA = [
   { id: 4, label: "Sexta-feira" },
 ];
 
+function SLAConfigCard({
+  config,
+  onEdit,
+  onDelete,
+}: {
+  config: SLAConfig;
+  onEdit: (config: SLAConfig) => void;
+  onDelete: (id: number) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-card overflow-hidden hover:shadow-md hover:border-primary/20 transition-all">
+      <div className="px-4 py-3 border-b border-border/60 bg-muted/30 flex items-center justify-between">
+        <div className="font-semibold text-sm text-primary">
+          {config.prioridade}
+        </div>
+        {config.descricao && (
+          <span className="text-xs text-muted-foreground">
+            {config.descricao}
+          </span>
+        )}
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">
+              Resposta
+            </div>
+            <div className="text-lg font-semibold">
+              {config.tempo_resposta_horas}h
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">
+              Resolução
+            </div>
+            <div className="text-lg font-semibold">
+              {config.tempo_resolucao_horas}h
+            </div>
+          </div>
+        </div>
+        <div className="pt-3 border-t border-border/40 flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onEdit(config)}
+            className="flex-1 h-8 text-xs"
+          >
+            <Edit2 className="w-3.5 h-3.5 mr-1" />
+            Editar
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onDelete(config.id)}
+            className="flex-1 h-8 text-xs"
+          >
+            <Trash2 className="w-3.5 h-3.5 mr-1" />
+            Remover
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SLA() {
   const queryClient = useQueryClient();
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showHoursDialog, setShowHoursDialog] = useState(false);
   const [editingConfig, setEditingConfig] = useState<SLAConfig | null>(null);
   const [editingHours, setEditingHours] = useState<BusinessHours | null>(null);
+  const [configViewMode, setConfigViewMode] = useState<"grid" | "list">("grid");
 
   const [formData, setFormData] = useState({
     prioridade: "",
@@ -305,28 +380,51 @@ export function SLA() {
     }
   };
 
-  const getDiaLabel = (dia: number) => {
-    return DIAS_SEMANA.find((d) => d.id === dia)?.label || `Dia ${dia}`;
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-lg font-semibold">Níveis de SLA e Prioridades</h2>
           <div className="flex gap-2">
+            <div className="flex gap-1 bg-muted rounded-lg p-1">
+              <Button
+                type="button"
+                variant={configViewMode === "grid" ? "default" : "ghost"}
+                onClick={() => setConfigViewMode("grid")}
+                size="sm"
+                className="h-8 px-3"
+              >
+                <Grid3x3 className="h-4 w-4" />
+                Grade
+              </Button>
+              <Button
+                type="button"
+                variant={configViewMode === "list" ? "default" : "ghost"}
+                onClick={() => setConfigViewMode("list")}
+                size="sm"
+                className="h-8 px-3"
+              >
+                <List className="h-4 w-4" />
+                Lista
+              </Button>
+            </div>
             <Button
               onClick={() => sincronizarProblemasMutation.mutate()}
               disabled={sincronizarProblemasMutation.isPending}
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="gap-2 h-8"
             >
               <RefreshCw className="w-4 h-4" />
-              Sincronizar Problemas
+              Sincronizar
             </Button>
             <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
               <DialogTrigger asChild>
-                <Button onClick={handleAddConfig} className="gap-2">
+                <Button
+                  onClick={handleAddConfig}
+                  size="sm"
+                  className="gap-2 h-8"
+                >
                   <Plus className="w-4 h-4" />
                   Adicionar SLA
                 </Button>
@@ -409,51 +507,82 @@ export function SLA() {
         {configsLoading ? (
           <div className="text-muted-foreground">Carregando...</div>
         ) : configs.length > 0 ? (
-          <div className="grid gap-3">
-            {configs.map((config: SLAConfig) => (
-              <Card key={config.id} className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h3 className="font-medium">{config.prioridade}</h3>
-                    {config.descricao && (
-                      <p className="text-sm text-muted-foreground">
-                        {config.descricao}
-                      </p>
-                    )}
-                    <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Resposta:</span>
-                        <p className="font-semibold">
-                          {config.tempo_resposta_horas}h
-                        </p>
+          <div>
+            {configViewMode === "grid" && (
+              <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {configs.map((config: SLAConfig) => (
+                  <SLAConfigCard
+                    key={config.id}
+                    config={config}
+                    onEdit={handleEditConfig}
+                    onDelete={() => deleteConfigMutation.mutate(config.id)}
+                  />
+                ))}
+              </div>
+            )}
+            {configViewMode === "list" && (
+              <div className="space-y-3">
+                {configs.map((config: SLAConfig) => (
+                  <div
+                    key={config.id}
+                    className="rounded-lg border border-border/60 bg-card overflow-hidden hover:shadow-md hover:border-primary/20 transition-all"
+                  >
+                    <div className="p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm">
+                            {config.prioridade}
+                          </h3>
+                          {config.descricao && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {config.descricao}
+                            </p>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 sm:text-right">
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground mb-1">
+                              Resposta
+                            </div>
+                            <div className="font-semibold">
+                              {config.tempo_resposta_horas}h
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground mb-1">
+                              Resolução
+                            </div>
+                            <div className="font-semibold">
+                              {config.tempo_resolucao_horas}h
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">
-                          Resolução:
-                        </span>
-                        <p className="font-semibold">
-                          {config.tempo_resolucao_horas}h
-                        </p>
+                      <div className="flex gap-2 mt-4 pt-4 border-t border-border/40">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditConfig(config)}
+                          className="flex-1 h-8 text-xs"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteConfigMutation.mutate(config.id)}
+                          className="flex-1 h-8 text-xs"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          Remover
+                        </Button>
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditConfig(config)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteConfigMutation.mutate(config.id)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
@@ -462,12 +591,12 @@ export function SLA() {
         )}
       </div>
 
-      <div className="border-t pt-6 space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="border-t pt-8 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-lg font-semibold">Horários Comerciais</h2>
           <Dialog open={showHoursDialog} onOpenChange={setShowHoursDialog}>
             <DialogTrigger asChild>
-              <Button onClick={handleAddHours} className="gap-2">
+              <Button onClick={handleAddHours} size="sm" className="gap-2 h-8">
                 <Plus className="w-4 h-4" />
                 Adicionar Horário
               </Button>
@@ -551,35 +680,56 @@ export function SLA() {
         {hoursLoading ? (
           <div className="text-muted-foreground">Carregando...</div>
         ) : businessHours.length > 0 ? (
-          <div className="grid gap-3">
-            {businessHours.map((hours: BusinessHours) => (
-              <Card key={hours.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">
-                      {getDiaLabel(hours.dia_semana)}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {hours.hora_inicio} - {hours.hora_fim}
-                    </p>
+          <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
+            <div className="divide-y divide-border/60">
+              {DIAS_SEMANA.map((dia) => {
+                const horasDia = businessHours.find(
+                  (h: BusinessHours) => h.dia_semana === dia.id,
+                );
+                return (
+                  <div
+                    key={dia.id}
+                    className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+                      <h3 className="font-medium text-sm">{dia.label}</h3>
+                    </div>
+                    {horasDia ? (
+                      <div className="flex items-center gap-4">
+                        <span className="font-semibold text-sm text-primary">
+                          {horasDia.hora_inicio} - {horasDia.hora_fim}
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditHours(horasDia)}
+                            className="h-8 px-3"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() =>
+                              deleteHoursMutation.mutate(horasDia.id)
+                            }
+                            className="h-8 px-3"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">
+                        Sem horário
+                      </span>
+                    )}
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditHours(hours)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteHoursMutation.mutate(hours.id)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
