@@ -624,9 +624,9 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
             hs = HistoricoStatus(
                 chamado_id=ch.id,
                 usuario_id=None,
-                status_anterior=prev,
-                status_novo=ch.status,
-                criado_em=now_brazil_naive(),
+                status=ch.status,
+                data_inicio=now_brazil_naive(),
+                descricao=f"Migrado: {prev} → {ch.status}",
             )
             db.add(hs)
             db.commit()
