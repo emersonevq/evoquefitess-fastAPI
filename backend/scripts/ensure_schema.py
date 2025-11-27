@@ -56,6 +56,15 @@ EXPECTED: Dict[str, Dict[str, str]] = {
         "status_novo": "VARCHAR(20) NOT NULL",
         "criado_em": "DATETIME NULL",
     },
+    "historico_anexos": {
+        "id": "INT PRIMARY KEY AUTO_INCREMENT",
+        "chamado_id": "INT NOT NULL",
+        "usuario_id": "INT NULL",
+        "assunto": "VARCHAR(255) NOT NULL",
+        "mensagem": "TEXT NOT NULL",
+        "destinatarios": "VARCHAR(255) NOT NULL",
+        "data_envio": "DATETIME NULL",
+    },
 }
 
 
