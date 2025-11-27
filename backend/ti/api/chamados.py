@@ -44,6 +44,15 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
 
         sla_status = SLACalculator.get_sla_status(db, chamado)
 
+        # Extrai métricas de resposta e resolução
+        resposta_metric = sla_status.get("resposta_metric")
+        resolucao_metric = sla_status.get("resolucao_metric")
+
+        tempo_resposta_horas = resposta_metric.get("tempo_decorrido_horas") if resposta_metric else None
+        limite_sla_resposta_horas = resposta_metric.get("tempo_limite_horas") if resposta_metric else None
+        tempo_resolucao_horas = resolucao_metric.get("tempo_decorrido_horas") if resolucao_metric else None
+        limite_sla_horas = resolucao_metric.get("tempo_limite_horas") if resolucao_metric else None
+
         # Procura por histórico existente
         existing = db.query(HistoricoSLA).filter(
             HistoricoSLA.chamado_id == chamado.id
@@ -53,9 +62,11 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
             # Atualiza o último histórico com novos cálculos
             existing.status_novo = chamado.status
             existing.status_anterior = status_anterior or existing.status_anterior
-            existing.tempo_resolucao_horas = sla_status.get("tempo_resolucao_horas")
-            existing.limite_sla_horas = sla_status.get("tempo_resolucao_limite_horas")
-            existing.status_sla = sla_status.get("tempo_resolucao_status")
+            existing.tempo_resposta_horas = tempo_resposta_horas
+            existing.limite_sla_resposta_horas = limite_sla_resposta_horas
+            existing.tempo_resolucao_horas = tempo_resolucao_horas
+            existing.limite_sla_horas = limite_sla_horas
+            existing.status_sla = sla_status.get("status_geral")
             db.add(existing)
         else:
             # Cria novo histórico
@@ -65,16 +76,18 @@ def _sincronizar_sla(db: Session, chamado: Chamado, status_anterior: str | None 
                 acao="criacao" if not status_anterior else "atualizacao",
                 status_anterior=status_anterior,
                 status_novo=chamado.status,
-                tempo_resolucao_horas=sla_status.get("tempo_resolucao_horas"),
-                limite_sla_horas=sla_status.get("tempo_resolucao_limite_horas"),
-                status_sla=sla_status.get("tempo_resolucao_status"),
+                tempo_resposta_horas=tempo_resposta_horas,
+                limite_sla_resposta_horas=limite_sla_resposta_horas,
+                tempo_resolucao_horas=tempo_resolucao_horas,
+                limite_sla_horas=limite_sla_horas,
+                status_sla=sla_status.get("status_geral"),
                 criado_em=chamado.data_abertura or now_brazil_naive(),
             )
             db.add(historico)
 
         db.commit()
 
-        # INVALIDAÇÃO DE CACHE: Quando um chamado é atualizado, invalida caches relacionados
+        # INVALIDA��ÃO DE CACHE: Quando um chamado é atualizado, invalida caches relacionados
         SLACacheManager.invalidate_by_chamado(db, chamado.id)
 
         # ATUALIZAÇÃO INCREMENTAL DE MÉTRICAS: Recalcula apenas o chamado afetado
