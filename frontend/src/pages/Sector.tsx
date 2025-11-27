@@ -462,20 +462,42 @@ function TicketForm({
           <Label>Problema Reportado</Label>
           <Select
             value={form.problema}
-            onValueChange={(v) => setForm({ ...form, problema: v })}
+            onValueChange={handleProblemaChange}
+            disabled={loadingProblemas}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
+              <SelectValue placeholder={loadingProblemas ? "Carregando..." : "Selecione"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Hardware">Hardware</SelectItem>
-              <SelectItem value="Software">Software</SelectItem>
-              <SelectItem value="Rede">Rede</SelectItem>
-              <SelectItem value="Acesso">Acesso</SelectItem>
-              <SelectItem value="Outro">Outro</SelectItem>
+              {problemas.map((p) => (
+                <SelectItem key={p.id} value={p.nome}>
+                  {p.nome}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
+
+        {problemaSelecionado && (
+          <div className="grid gap-2 mt-2 p-3 rounded-lg bg-secondary/40 border border-secondary">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Prioridade:</span>
+                <span className={`font-semibold text-sm ${getPrioridadeColor(problemaSelecionado.prioridade)}`}>
+                  {problemaSelecionado.prioridade}
+                </span>
+              </div>
+              {problemaSelecionado.tempo_resolucao_horas && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Prazo máximo:</span>
+                  <span className="font-semibold text-sm">
+                    {formatTempo(problemaSelecionado.tempo_resolucao_horas)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-2">
