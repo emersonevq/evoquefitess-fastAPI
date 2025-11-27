@@ -333,8 +333,10 @@ function TicketForm({
   useEffect(() => {
     const carregarProblemas = async () => {
       try {
-        const data = await apiFetch("/problemas");
-        setProblemas(data || []);
+        const response = await apiFetch("/problemas");
+        if (!response.ok) throw new Error("Falha ao carregar problemas");
+        const data = await response.json();
+        setProblemas(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Erro ao carregar problemas:", error);
         setProblemas([]);

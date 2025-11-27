@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from core.db import get_db, engine
-from ti.schemas.problema import ProblemaCreate, ProblemaOut
+from ti.schemas.problema import ProblemaCreate, ProblemaUpdate, ProblemaOut
 
 router = APIRouter(prefix="/problemas", tags=["TI - Problemas"])
 
@@ -138,3 +138,20 @@ def criar_problema(payload: ProblemaCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar problema: {e}")
+
+@router.patch("/{problema_id}", response_model=ProblemaOut)
+def atualizar_problema(problema_id: int, payload: ProblemaUpdate, db: Session = Depends(get_db)):
+    try:
+        print(f"✅ PATCH recebido para ID {problema_id}: {payload.model_dump()}")
+        from ti.services.problemas import atualizar_problema as service_atualizar
+        result = service_atualizar(db, problema_id, payload)
+        print(f"✅ Resultado da atualização: {result}")
+        return result
+    except ValueError as e:
+        print(f"❌ ValueError: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"❌ Exception: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar problema: {e}")

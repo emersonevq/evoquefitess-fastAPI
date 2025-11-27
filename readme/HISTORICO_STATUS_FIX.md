@@ -15,7 +15,7 @@ Havia 3 definições diferentes da tabela `historico_status`:
 Quando o código tentava inserir um registro na tabela, havia um erro porque as colunas não correspondiam.
 
 ---
-c
+
 ## ✅ Soluções Aplicadas
 
 ### 1. Atualização dos Scripts de Schema
