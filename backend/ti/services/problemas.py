@@ -2,7 +2,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ti.models import Problema
-from ti.schemas.problema import ProblemaCreate
+from ti.schemas.problema import ProblemaCreate, ProblemaUpdate
 
 
 VALID_PRIORIDADES = {"Crítica", "Alta", "Normal", "Baixa"}
