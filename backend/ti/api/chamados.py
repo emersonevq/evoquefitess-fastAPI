@@ -18,7 +18,7 @@ from werkzeug.security import check_password_hash
 from ..models.notification import Notification
 import json
 from core.utils import now_brazil_naive
-from ..models import Chamado, User, TicketAnexo, ChamadoAnexo, HistoricoTicket, HistoricoStatus
+from ..models import Chamado, User, TicketAnexo, ChamadoAnexo, HistoricoTicket, HistoricoStatus, ChamadoTimeline
 from ti.schemas.attachment import AnexoOut
 from ti.schemas.ticket import HistoricoItem, HistoricoResponse
 from sqlalchemy import inspect, text
