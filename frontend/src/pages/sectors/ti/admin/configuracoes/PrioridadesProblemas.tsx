@@ -16,14 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
 
@@ -284,45 +276,41 @@ export function PrioridadesProblemas() {
           Nenhum problema cadastrado. Crie um novo para começar.
         </div>
       ) : (
-        <div className="card-surface rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary hover:bg-secondary">
-                <TableHead>Nome</TableHead>
-                <TableHead>Prioridade</TableHead>
-                <TableHead>Prazo</TableHead>
-                <TableHead>Internet</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {problemas.map((problema) => (
-                <TableRow key={problema.id}>
-                  <TableCell className="font-medium">{problema.nome}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-block px-2 py-1 rounded-md text-xs font-medium ${getPrioridadeColor(problema.prioridade)}`}
-                    >
-                      {problema.prioridade}
+        <div className="space-y-3">
+          {problemas.map((problema) => (
+            <div
+              key={problema.id}
+              className="card-surface rounded-lg p-4 flex items-center justify-between gap-4 border border-border/60"
+            >
+              <div className="flex-1 space-y-1">
+                <h3 className="font-medium">{problema.nome}</h3>
+                <div className="flex items-center gap-4 text-sm">
+                  <span
+                    className={`inline-block px-2 py-1 rounded-md text-xs font-medium ${getPrioridadeColor(problema.prioridade)}`}
+                  >
+                    {problema.prioridade}
+                  </span>
+                  {problema.tempo_resolucao_horas && (
+                    <span className="text-muted-foreground">
+                      Prazo: {formatTempo(problema.tempo_resolucao_horas)}
                     </span>
-                  </TableCell>
-                  <TableCell>{formatTempo(problema.tempo_resolucao_horas)}</TableCell>
-                  <TableCell>
-                    {problema.requer_internet ? "Sim" : "Não"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(problema)}
-                    >
-                      Editar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  )}
+                  {problema.requer_internet && (
+                    <span className="text-muted-foreground">
+                      Requer Internet
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEdit(problema)}
+              >
+                Editar
+              </Button>
+            </div>
+          ))}
         </div>
       )}
     </div>
