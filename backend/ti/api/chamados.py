@@ -748,20 +748,26 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest = Body(...), 
         db.query(TicketAnexo).filter(TicketAnexo.chamado_id == chamado_id).delete()
         db.commit()
 
+        # Capturar dados do chamado antes de deletar
+        chamado_codigo = ch.codigo
+        chamado_protocolo = ch.protocolo
+
         # Now delete the chamado
         db.delete(ch)
         db.commit()
+
+        notification_data = None
         try:
             Notification.__table__.create(bind=engine, checkfirst=True)
             dados = json.dumps({
                 "id": chamado_id,
-                "codigo": ch.codigo,
-                "protocolo": ch.protocolo,
+                "codigo": chamado_codigo,
+                "protocolo": chamado_protocolo,
             }, ensure_ascii=False)
             n = Notification(
                 tipo="chamado",
-                titulo=f"Chamado excluído: {ch.codigo}",
-                mensagem=f"Chamado {ch.protocolo} removido",
+                titulo=f"Chamado excluído: {chamado_codigo}",
+                mensagem=f"Chamado {chamado_protocolo} removido",
                 recurso="chamado",
                 recurso_id=chamado_id,
                 acao="excluido",
@@ -769,10 +775,9 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest = Body(...), 
             )
             db.add(n)
             db.commit()
-            db.refresh(n)
-            import anyio
-            anyio.from_thread.run(sio.emit, "chamado:deleted", {"id": chamado_id})
-            anyio.from_thread.run(sio.emit, "notification:new", {
+
+            # Capturar dados antes de detach
+            notification_data = {
                 "id": n.id,
                 "tipo": n.tipo,
                 "titulo": n.titulo,
@@ -783,7 +788,17 @@ def deletar_chamado(chamado_id: int, payload: ChamadoDeleteRequest = Body(...), 
                 "dados": n.dados,
                 "lido": n.lido,
                 "criado_em": n.criado_em.isoformat() if n.criado_em else None,
-            })
+            }
+
+            # Detach object before async operations
+            db.expunge(n)
+
+            try:
+                import anyio
+                anyio.from_thread.run(sio.emit, "chamado:deleted", {"id": chamado_id})
+                anyio.from_thread.run(sio.emit, "notification:new", notification_data)
+            except Exception:
+                pass
         except Exception:
             pass
         return {"ok": True}
