@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Edit2, Sync2 } from "lucide-react";
+import { Trash2, Plus, Edit2, RefreshCw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -321,7 +321,7 @@ export function SLA() {
               variant="outline"
               className="gap-2"
             >
-              <Sync2 className="w-4 h-4" />
+              <RefreshCw className="w-4 h-4" />
               Sincronizar Problemas
             </Button>
             <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
