@@ -12,11 +12,11 @@ class ProblemaCreate(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
 class ProblemaUpdate(BaseModel):
-    prioridade: str | None = None
-    tempo_resolucao_horas: int | None = None
-    requer_internet: bool | None = None
+    prioridade: str | None = Field(default=None, description="Prioridade do problema")
+    tempo_resolucao_horas: int | None = Field(default=None, description="Tempo máximo para resolver em horas")
+    requer_internet: bool | None = Field(default=None, description="Se requer item de internet")
 
-    model_config = ConfigDict(populate_by_name=True, extra="ignore")
+    model_config = ConfigDict(populate_by_name=True, extra="ignore", str_strip_whitespace=True)
 
 class ProblemaOut(BaseModel):
     id: int
