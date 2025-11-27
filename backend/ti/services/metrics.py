@@ -399,7 +399,8 @@ class MetricsCalculator:
             chamados_hoje = db.query(Chamado).filter(
                 and_(
                     Chamado.data_abertura >= hoje_inicio,
-                    Chamado.status != "Cancelado"
+                    Chamado.status != "Cancelado",
+                    Chamado.is_deleted == False
                 )
             ).count()
 
@@ -407,7 +408,8 @@ class MetricsCalculator:
                 and_(
                     Chamado.data_abertura >= ontem_inicio,
                     Chamado.data_abertura < ontem_fim,
-                    Chamado.status != "Cancelado"
+                    Chamado.status != "Cancelado",
+                    Chamado.is_deleted == False
                 )
             ).count()
 
