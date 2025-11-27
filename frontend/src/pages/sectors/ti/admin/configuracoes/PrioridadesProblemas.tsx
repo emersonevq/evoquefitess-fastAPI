@@ -93,10 +93,12 @@ export function PrioridadesProblemas() {
           description: "Edição será implementada em breve",
         });
       } else {
-        await apiFetch("/problemas", {
+        const response = await apiFetch("/problemas", {
           method: "POST",
           body: JSON.stringify(payload),
         });
+
+        if (!response.ok) throw new Error("Falha ao criar problema");
 
         toast({
           title: "Sucesso",
