@@ -465,9 +465,9 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="relative group">
+      {/* Charts Row 2 - SLA Distribution and P90 Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="relative group lg:col-span-1">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative card-surface rounded-2xl p-6 border border-border/60">
             <h3 className="font-semibold text-lg mb-4">Distribuição SLA</h3>
