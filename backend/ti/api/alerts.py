@@ -168,6 +168,7 @@ async def create_alert(
             "show_on_home": new_alert.show_on_home,
             "created_by": new_alert.created_by,
             "ativo": new_alert.ativo,
+            "usuarios_visualizaram": new_alert.usuarios_visualizaram,
             "created_at": new_alert.created_at.isoformat() if new_alert.created_at else None,
             "updated_at": new_alert.updated_at.isoformat() if new_alert.updated_at else None,
             "imagem_mime_type": new_alert.imagem_mime_type
