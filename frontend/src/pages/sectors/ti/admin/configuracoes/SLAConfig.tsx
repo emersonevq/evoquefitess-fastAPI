@@ -141,8 +141,10 @@ export function SLA() {
   const queryClient = useQueryClient();
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showHoursDialog, setShowHoursDialog] = useState(false);
+  const [showHolidayDialog, setShowHolidayDialog] = useState(false);
   const [editingConfig, setEditingConfig] = useState<SLAConfig | null>(null);
   const [editingHours, setEditingHours] = useState<BusinessHours | null>(null);
+  const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
   const [configViewMode, setConfigViewMode] = useState<"grid" | "list">("grid");
 
   const [formData, setFormData] = useState({
@@ -156,6 +158,12 @@ export function SLA() {
     dia_semana: 0,
     hora_inicio: "08:00",
     hora_fim: "18:00",
+  });
+
+  const [holidayData, setHolidayData] = useState({
+    data: new Date().toISOString().split("T")[0],
+    nome: "",
+    descricao: "",
   });
 
   const { data: configs = [], isLoading: configsLoading } = useQuery({
