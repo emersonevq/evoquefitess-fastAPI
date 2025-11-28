@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode } from "react";
-import { useAuth0 as useAuth0Hook } from "@auth0/auth0-react";
 import { useState, useEffect } from "react";
+import { msalInstance, scopes } from "./msal-config";
+import { AuthenticationResult } from "@azure/msal-browser";
 
 interface AuthContextType {
   user: {
@@ -14,73 +15,110 @@ interface AuthContextType {
   } | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email?: string, password?: string) => Promise<boolean>;
+  login: (email?: string, password?: string) => Promise<any>;
   logout: () => void;
-  loginWithAuth0: () => Promise<void>;
+  loginWithMicrosoft: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const {
-    isAuthenticated: auth0IsAuthenticated,
-    isLoading: auth0IsLoading,
-    user: auth0User,
-    loginWithRedirect,
-    logout: auth0Logout,
-    getAccessTokenSilently,
-  } = useAuth0Hook();
-
   const [user, setUser] = useState<AuthContextType["user"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [appIsReady, setAppIsReady] = useState(false);
 
-  // When Auth0 user changes, validate with backend
+  // Initialize MSAL and sync with backend on mount
   useEffect(() => {
-    const syncUserWithBackend = async () => {
-      if (!auth0IsAuthenticated || !auth0User?.email) {
+    const initMsal = async () => {
+      try {
+        await msalInstance.initialize();
+        
+        // Check if there's an existing session
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
+          const account = accounts[0];
+          // Try to get token silently
+          try {
+            const result = await msalInstance.acquireTokenSilent({
+              scopes,
+              account,
+            });
+            // Validate with backend
+            await validateAndSyncUser(result.accessToken);
+          } catch (error) {
+            console.error("Erro ao obter token silenciosamente:", error);
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Erro ao inicializar MSAL:", error);
         setUser(null);
+      } finally {
         setIsLoading(false);
         setAppIsReady(true);
+      }
+    };
+
+    initMsal();
+  }, []);
+
+  // Validate token with backend and sync user data
+  const validateAndSyncUser = async (accessToken: string) => {
+    try {
+      // Decode JWT to extract email (without verification, since we trust the token from MSAL)
+      const decoded = decodeJwt(accessToken);
+      const email = decoded.email || decoded.preferred_username || decoded.upn;
+
+      if (!email) {
+        console.error("Email não encontrado no token");
+        setUser(null);
         return;
       }
 
-      try {
-        // Get Auth0 access token
-        const token = await getAccessTokenSilently({
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-        });
+      // Send to backend to validate and get user data
+      const response = await fetch("/api/usuarios/msal-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          email,
+          name: decoded.name || "",
+        }),
+      });
 
-        // Validate token with backend and get user data
-        const response = await fetch("/api/usuarios/auth0-login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email: auth0User.email,
-            name: auth0User.name || "",
-          }),
-        });
-
-        if (!response.ok) {
-          if (response.status === 403) {
-            // Email not found in system
-            setUser(null);
-            console.error("Email não autorizado:", auth0User.email);
-          } else {
-            console.error("Erro ao validar com backend:", response.status);
-          }
-          setIsLoading(false);
-          setAppIsReady(true);
-          return;
+      if (!response.ok) {
+        if (response.status === 403) {
+          console.error("Email não autorizado:", email);
+        } else {
+          console.error("Erro ao validar com backend:", response.status);
         }
+        setUser(null);
+        return;
+      }
 
-        const data = await response.json();
-        const now = Date.now();
+      const data = await response.json();
+      const now = Date.now();
 
-        setUser({
+      setUser({
+        id: data.id,
+        email: data.email,
+        name: `${data.nome} ${data.sobrenome}`,
+        nivel_acesso: data.nivel_acesso,
+        setores: Array.isArray(data.setores) ? data.setores : [],
+        bi_subcategories: Array.isArray(data.bi_subcategories)
+          ? data.bi_subcategories
+          : null,
+        loginTime: now,
+      });
+
+      // Store in sessionStorage for quick access
+      sessionStorage.setItem(
+        "evoque-fitness-auth",
+        JSON.stringify({
           id: data.id,
           email: data.email,
           name: `${data.nome} ${data.sobrenome}`,
@@ -90,95 +128,104 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ? data.bi_subcategories
             : null,
           loginTime: now,
-        });
-
-        // Store in sessionStorage for quick access
-        sessionStorage.setItem(
-          "evoque-fitness-auth",
-          JSON.stringify({
-            id: data.id,
-            email: data.email,
-            name: `${data.nome} ${data.sobrenome}`,
-            nivel_acesso: data.nivel_acesso,
-            setores: Array.isArray(data.setores) ? data.setores : [],
-            bi_subcategories: Array.isArray(data.bi_subcategories)
-              ? data.bi_subcategories
-              : null,
-            loginTime: now,
-          }),
-        );
-      } catch (error) {
-        console.error("Erro ao sincronizar usuário:", error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-        setAppIsReady(true);
-      }
-    };
-
-    if (!auth0IsLoading) {
-      syncUserWithBackend();
+        })
+      );
+    } catch (error) {
+      console.error("Erro ao sincronizar usuário:", error);
+      setUser(null);
     }
-  }, [
-    auth0IsAuthenticated,
-    auth0User?.email,
-    auth0IsLoading,
-    getAccessTokenSilently,
-  ]);
+  };
 
+  // Traditional email/password login
   const login = async (email?: string, password?: string) => {
-    // Legacy login method - not used with Auth0, kept for compatibility
-    return false;
-  };
-
-  const logout = () => {
-    setUser(null);
-    sessionStorage.removeItem("evoque-fitness-auth");
-    localStorage.removeItem("evoque-fitness-auth");
-
-    // Auth0 logout with redirect
-    auth0Logout({
-      logoutParams: {
-        returnTo: window.location.origin,
-      },
-    });
-  };
-
-  const loginWithAuth0 = () => {
     try {
-      const domain = import.meta.env.VITE_AUTH0_DOMAIN;
-      const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
-      const redirectUri = import.meta.env.VITE_AUTH0_REDIRECT_URI;
-      const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
-
-      if (!domain || !clientId || !redirectUri) {
-        throw new Error("Auth0 environment variables not configured");
+      if (!email || !password) {
+        throw new Error("Email e senha são obrigatórios");
       }
 
-      const params = new URLSearchParams({
-        response_type: "code",
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        scope: "openid profile email",
-        audience: audience,
-        connection: "Portalevoquefitness",
+      const response = await fetch("/api/usuarios/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, senha: password }),
       });
 
-      const authUrl = `https://${domain}/authorize?${params.toString()}`;
-      window.location.href = authUrl;
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || "Falha ao autenticar");
+      }
+
+      const data = await response.json();
+      const now = Date.now();
+
+      const userData = {
+        id: data.id,
+        email: data.email,
+        name: `${data.nome} ${data.sobrenome}`,
+        nivel_acesso: data.nivel_acesso,
+        setores: Array.isArray(data.setores) ? data.setores : [],
+        bi_subcategories: Array.isArray(data.bi_subcategories)
+          ? data.bi_subcategories
+          : null,
+        loginTime: now,
+      };
+
+      setUser(userData);
+
+      // Store in sessionStorage
+      sessionStorage.setItem("evoque-fitness-auth", JSON.stringify(userData));
+
+      return {
+        ...data,
+        alterar_senha_primeiro_acesso: data.alterar_senha_primeiro_acesso || false,
+      };
+    } catch (error: any) {
+      throw new Error(error?.message || "Falha ao autenticar");
+    }
+  };
+
+  // Login with Microsoft Office 365
+  const loginWithMicrosoft = async () => {
+    try {
+      const result: AuthenticationResult = await msalInstance.loginPopup({
+        scopes,
+      });
+
+      // Validate with backend
+      await validateAndSyncUser(result.accessToken);
     } catch (error) {
-      console.error("Erro ao fazer login com Auth0:", error);
+      console.error("Erro ao fazer login com Microsoft:", error);
       throw error;
     }
   };
 
+  // Logout
+  const logout = async () => {
+    try {
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) {
+        const account = accounts[0];
+        await msalInstance.logoutPopup({
+          account,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+
+    setUser(null);
+    sessionStorage.removeItem("evoque-fitness-auth");
+    window.location.href = "/";
+  };
+
   const contextValue: AuthContextType = {
     user,
-    isAuthenticated: !!user && auth0IsAuthenticated,
-    isLoading: auth0IsLoading || !appIsReady,
+    isAuthenticated: !!user,
+    isLoading,
     login,
     logout,
-    loginWithAuth0,
+    loginWithMicrosoft,
   };
 
   return (
@@ -188,8 +235,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuthContext() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuthContext must be used within an AuthProvider");
+  if (!context) {
+    throw new Error("useAuthContext deve ser usado dentro de AuthProvider");
   }
   return context;
+}
+
+// Helper function to decode JWT without verification
+function decodeJwt(token: string): Record<string, any> {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Erro ao decodificar JWT:", error);
+    return {};
+  }
 }
