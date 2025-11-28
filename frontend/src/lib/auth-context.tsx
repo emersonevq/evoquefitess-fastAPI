@@ -8,6 +8,8 @@ interface AuthContextType {
     id?: number;
     email: string;
     name: string;
+    firstName?: string;
+    lastName?: string;
     nivel_acesso?: string;
     setores?: string[];
     bi_subcategories?: string[] | null;
