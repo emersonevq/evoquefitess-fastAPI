@@ -328,7 +328,10 @@ class MetricsCalculator:
         # Tenta cache persistente
         cached_persistent = PersistentMetricsCache.get(db, "sla_compliance_24h")
         if cached_persistent is not None:
-            result = cached_persistent.get("value", 0)
+            if isinstance(cached_persistent, dict):
+                result = cached_persistent.get("value", 0)
+            else:
+                result = cached_persistent if isinstance(cached_persistent, int) else 0
             MetricsCache.set("sla_compliance_24h", result)
             return result
 
@@ -447,7 +450,10 @@ class MetricsCalculator:
 
         cached_persistent = PersistentMetricsCache.get(db, "sla_compliance_mes")
         if cached_persistent is not None:
-            result = cached_persistent.get("value", 0)
+            if isinstance(cached_persistent, dict):
+                result = cached_persistent.get("value", 0)
+            else:
+                result = cached_persistent if isinstance(cached_persistent, int) else 0
             MetricsCache.set("sla_compliance_mes", result)
             return result
 
@@ -708,7 +714,10 @@ class MetricsCalculator:
 
         cached_persistent = PersistentMetricsCache.get(db, "sla_distribution")
         if cached_persistent is not None:
-            result = cached_persistent.get("value", {})
+            if isinstance(cached_persistent, dict):
+                result = cached_persistent.get("value", {})
+            else:
+                result = {}
             MetricsCache.set("sla_distribution", result)
             return result
 
