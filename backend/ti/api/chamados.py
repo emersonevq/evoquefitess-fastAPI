@@ -591,13 +591,26 @@ def atualizar_status(chamado_id: int, payload: ChamadoStatusUpdate, db: Session 
                 dados=dados,
             )
             db.add(n)
+
+            # Fechar status anterior preenchendo data_fim
+            agora = now_brazil_naive()
+            status_anterior = db.query(HistoricoStatus).filter(
+                HistoricoStatus.chamado_id == ch.id,
+                HistoricoStatus.data_fim.is_(None)
+            ).order_by(HistoricoStatus.data_inicio.desc()).first()
+
+            if status_anterior and status_anterior.data_inicio:
+                status_anterior.data_fim = agora
+                db.add(status_anterior)
+
             # registrar em historico_status (única fonte de verdade)
             hs = HistoricoStatus(
                 chamado_id=ch.id,
                 usuario_id=None,
-                status_anterior=prev,
-                status_novo=ch.status,
-                criado_em=now_brazil_naive(),
+                status=ch.status,
+                data_inicio=agora,
+                descricao=f"{prev} → {ch.status}",
+                created_at=agora,
             )
             db.add(hs)
             db.commit()
