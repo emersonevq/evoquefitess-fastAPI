@@ -14,6 +14,7 @@ import {
   Plus,
   Sparkles,
   Monitor,
+  Eye,
 } from "lucide-react";
 import {
   Card,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ALERT_PAGES, groupPagesByCategory } from "@/config/alert-pages";
+import AlertViewersModal from "@/components/alerts/AlertViewersModal";
 
 type MediaItem = { id: number | string; url?: string; type?: string };
 
