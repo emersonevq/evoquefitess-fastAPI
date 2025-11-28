@@ -11,6 +11,8 @@ class AlertOut(BaseModel):
     end_at: datetime | None = None
     link: str | None = None
     media_id: int | None = None
+    imagem_blob: bytes | None = None
+    imagem_mime_type: str | None = None
     ativo: bool | None = True
     criado_em: datetime | None = None
 
@@ -25,4 +27,6 @@ class AlertCreate(BaseModel):
     end_at: datetime | None = None
     link: str | None = None
     media_id: int | None = None
+    imagem_blob: bytes | None = None
+    imagem_mime_type: str | None = None
     ativo: bool | None = True
