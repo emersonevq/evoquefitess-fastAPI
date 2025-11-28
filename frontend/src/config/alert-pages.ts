@@ -157,7 +157,7 @@ export const groupPagesByCategory = () => {
       acc[page.category].push(page);
       return acc;
     },
-    {} as Record<string, (typeof ALERT_PAGES)[AlertPageId][]>
+    {} as Record<string, (typeof ALERT_PAGES)[AlertPageId][]>,
   );
 
   return grouped;
@@ -168,7 +168,7 @@ export const groupPagesByCategory = () => {
  */
 export const shouldShowAlertOnPage = (
   alertPages: string[] | null | undefined,
-  currentPath: string
+  currentPath: string,
 ): boolean => {
   // Se não houver páginas configuradas, mostrar em todas
   if (!alertPages || alertPages.length === 0) {
@@ -190,7 +190,7 @@ export const shouldShowAlertOnPage = (
     if (pathParts.length === pageParts.length) {
       return pathParts.every(
         (part, idx) =>
-          pageParts[idx] === part || pageParts[idx]?.startsWith(":")
+          pageParts[idx] === part || pageParts[idx]?.startsWith(":"),
       );
     }
 

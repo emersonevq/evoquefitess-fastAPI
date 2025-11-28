@@ -149,7 +149,9 @@ export default function AlertDisplay() {
                     {alert.message}
                   </p>
                   {alert.description && (
-                    <p className={`mt-2 text-xs ${config.textColor} opacity-75`}>
+                    <p
+                      className={`mt-2 text-xs ${config.textColor} opacity-75`}
+                    >
                       {alert.description}
                     </p>
                   )}
