@@ -156,20 +156,26 @@ export default function AlertDisplay() {
                 {/* Conteúdo do Alerta */}
                 <div className="flex-1 text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <Icon className={`h-5 w-5 ${config.iconColor} flex-shrink-0`} />
+                    <Icon
+                      className={`h-5 w-5 ${config.iconColor} flex-shrink-0`}
+                    />
                     <h3 className={`font-bold text-base ${config.textColor}`}>
                       {alert.title}
                     </h3>
                   </div>
 
                   {alert.message && (
-                    <p className={`text-sm ${config.textColor} opacity-90 leading-relaxed`}>
+                    <p
+                      className={`text-sm ${config.textColor} opacity-90 leading-relaxed`}
+                    >
                       {alert.message}
                     </p>
                   )}
 
                   {alert.description && (
-                    <p className={`text-xs ${config.textColor} opacity-75 mt-2 italic`}>
+                    <p
+                      className={`text-xs ${config.textColor} opacity-75 mt-2 italic`}
+                    >
                       {alert.description}
                     </p>
                   )}

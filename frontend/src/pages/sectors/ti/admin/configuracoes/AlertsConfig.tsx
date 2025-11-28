@@ -295,50 +295,53 @@ export default function AlertsConfig() {
               Exibir em que páginas?
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-3 border rounded-lg bg-muted/20">
-              {Object.entries(groupPagesByCategory()).map(([category, pages]) => (
-                <div key={category} className="space-y-2">
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {category}
-                  </h4>
-                  <div className="space-y-2 pl-2 border-l-2 border-muted-foreground/20">
-                    {pages.map((page) => (
-                      <label
-                        key={page.id}
-                        className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors cursor-pointer group"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedPages.includes(page.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedPages([...selectedPages, page.id]);
-                            } else {
-                              setSelectedPages(
-                                selectedPages.filter((p) => p !== page.id)
-                              );
-                            }
-                          }}
-                          className="w-4 h-4 rounded border-muted-foreground/30 accent-primary"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium group-hover:text-foreground text-muted-foreground">
-                            {page.label}
-                          </p>
-                          <p className="text-xs text-muted-foreground/60">
-                            {page.path}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
+              {Object.entries(groupPagesByCategory()).map(
+                ([category, pages]) => (
+                  <div key={category} className="space-y-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {category}
+                    </h4>
+                    <div className="space-y-2 pl-2 border-l-2 border-muted-foreground/20">
+                      {pages.map((page) => (
+                        <label
+                          key={page.id}
+                          className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors cursor-pointer group"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedPages.includes(page.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPages([...selectedPages, page.id]);
+                              } else {
+                                setSelectedPages(
+                                  selectedPages.filter((p) => p !== page.id),
+                                );
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-muted-foreground/30 accent-primary"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium group-hover:text-foreground text-muted-foreground">
+                              {page.label}
+                            </p>
+                            <p className="text-xs text-muted-foreground/60">
+                              {page.path}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
             {selectedPages.length > 0 && (
               <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <p className="text-sm font-medium text-primary">
                   {selectedPages.length}{" "}
-                  {selectedPages.length === 1 ? "página" : "páginas"} selecionada
+                  {selectedPages.length === 1 ? "página" : "páginas"}{" "}
+                  selecionada
                   {selectedPages.length !== 1 ? "s" : ""}
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -352,7 +355,7 @@ export default function AlertsConfig() {
                           type="button"
                           onClick={() =>
                             setSelectedPages(
-                              selectedPages.filter((p) => p !== pageId)
+                              selectedPages.filter((p) => p !== pageId),
                             )
                           }
                           className="ml-2 hover:opacity-70"
@@ -543,7 +546,9 @@ export default function AlertsConfig() {
                             <div className="flex flex-wrap gap-2">
                               {alert.pages.map((pageId: string) => {
                                 const page =
-                                  ALERT_PAGES[pageId as keyof typeof ALERT_PAGES];
+                                  ALERT_PAGES[
+                                    pageId as keyof typeof ALERT_PAGES
+                                  ];
                                 return page ? (
                                   <Badge key={pageId} variant="outline">
                                     {page.label}
@@ -559,7 +564,8 @@ export default function AlertsConfig() {
                           alert.usuarios_visualizaram.length > 0 && (
                             <div className="pt-2 border-t">
                               <p className="text-xs font-medium text-muted-foreground">
-                                Visualizado por {alert.usuarios_visualizaram.length}{" "}
+                                Visualizado por{" "}
+                                {alert.usuarios_visualizaram.length}{" "}
                                 {alert.usuarios_visualizaram.length === 1
                                   ? "usuário"
                                   : "usuários"}
