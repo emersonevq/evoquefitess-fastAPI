@@ -6,9 +6,9 @@
 -- =====================================================================
 
 -- =====================================================================
--- 1. CRIAR TABELA sla_holidays
+-- 1. CRIAR TABELA sla_feriados
 -- =====================================================================
-CREATE TABLE IF NOT EXISTS `sla_holidays` (
+CREATE TABLE IF NOT EXISTS `sla_feriados` (
     `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT 'ID do feriado',
     `data` DATE NOT NULL UNIQUE COMMENT 'Data do feriado (YYYY-MM-DD)',
     `nome` VARCHAR(150) NOT NULL COMMENT 'Nome do feriado (ex: Natal, Ano Novo)',
