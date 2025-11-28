@@ -148,14 +148,6 @@ export default function AlertDisplay() {
     }
   }, [currentAlert?.id]);
 
-  useEffect(() => {
-    if (!currentAlert) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") dismissAlert(currentAlert.id);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [currentAlert?.id, dismissedAlerts]);
 
   if (loading || !currentAlert) return null;
 
