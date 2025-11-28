@@ -872,7 +872,7 @@ export function SLA() {
           <h2 className="text-lg font-semibold">Feriados</h2>
           <Dialog open={showHolidayDialog} onOpenChange={setShowHolidayDialog}>
             <DialogTrigger asChild>
-              <Button onClick={handleAddHoliday} size="sm" className="gap-2 h-8">
+              <Button onClick={handleAddFeriado} size="sm" className="gap-2 h-8">
                 <Plus className="w-4 h-4" />
                 Adicionar Feriado
               </Button>
@@ -880,7 +880,7 @@ export function SLA() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>
-                  {editingHoliday
+                  {editingFeriado
                     ? "Editar Feriado"
                     : "Adicionar Feriado"}
                 </DialogTitle>
@@ -890,24 +890,24 @@ export function SLA() {
                   <Label>Data</Label>
                   <Input
                     type="date"
-                    value={holidayData.data}
+                    value={feriadoData.data}
                     onChange={(e) =>
-                      setHolidayData({
-                        ...holidayData,
+                      setFeriadoData({
+                        ...feriadoData,
                         data: e.target.value,
                       })
                     }
-                    disabled={!!editingHoliday}
+                    disabled={!!editingFeriado}
                   />
                 </div>
                 <div>
                   <Label>Nome</Label>
                   <Input
                     placeholder="Ex: Natal, Ano Novo"
-                    value={holidayData.nome}
+                    value={feriadoData.nome}
                     onChange={(e) =>
-                      setHolidayData({
-                        ...holidayData,
+                      setFeriadoData({
+                        ...feriadoData,
                         nome: e.target.value,
                       })
                     }
@@ -917,10 +917,10 @@ export function SLA() {
                   <Label>Descrição</Label>
                   <Input
                     placeholder="Descrição do feriado (opcional)"
-                    value={holidayData.descricao}
+                    value={feriadoData.descricao}
                     onChange={(e) =>
-                      setHolidayData({
-                        ...holidayData,
+                      setFeriadoData({
+                        ...feriadoData,
                         descricao: e.target.value,
                       })
                     }
@@ -933,8 +933,8 @@ export function SLA() {
                   >
                     Cancelar
                   </Button>
-                  <Button onClick={handleSaveHoliday}>
-                    {editingHoliday ? "Atualizar" : "Adicionar"}
+                  <Button onClick={handleSaveFeriado}>
+                    {editingFeriado ? "Atualizar" : "Adicionar"}
                   </Button>
                 </div>
               </div>
@@ -942,31 +942,31 @@ export function SLA() {
           </Dialog>
         </div>
 
-        {holidaysLoading ? (
+        {feriadosLoading ? (
           <div className="text-muted-foreground">Carregando...</div>
-        ) : holidays.length > 0 ? (
+        ) : feriados.length > 0 ? (
           <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
             <div className="divide-y divide-border/60">
-              {holidays
-                .sort((a: Holiday, b: Holiday) => a.data.localeCompare(b.data))
-                .map((holiday: Holiday) => (
+              {feriados
+                .sort((a: Feriado, b: Feriado) => a.data.localeCompare(b.data))
+                .map((feriado: Feriado) => (
                   <div
-                    key={holiday.id}
+                    key={feriado.id}
                     className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between"
                   >
                     <div className="flex items-start gap-3 flex-1">
                       <Calendar className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
                       <div className="flex-1">
-                        <h3 className="font-medium text-sm">{holiday.nome}</h3>
+                        <h3 className="font-medium text-sm">{feriado.nome}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-muted-foreground">
-                            {new Date(holiday.data + "T00:00:00").toLocaleDateString(
+                            {new Date(feriado.data + "T00:00:00").toLocaleDateString(
                               "pt-BR"
                             )}
                           </span>
-                          {holiday.descricao && (
+                          {feriado.descricao && (
                             <span className="text-xs text-muted-foreground">
-                              • {holiday.descricao}
+                              • {feriado.descricao}
                             </span>
                           )}
                         </div>
@@ -976,7 +976,7 @@ export function SLA() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleEditHoliday(holiday)}
+                        onClick={() => handleEditFeriado(feriado)}
                         className="h-8 px-3"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -985,7 +985,7 @@ export function SLA() {
                         size="sm"
                         variant="destructive"
                         onClick={() =>
-                          deleteHolidayMutation.mutate(holiday.id)
+                          deleteFeriadoMutation.mutate(feriado.id)
                         }
                         className="h-8 px-3"
                       >
