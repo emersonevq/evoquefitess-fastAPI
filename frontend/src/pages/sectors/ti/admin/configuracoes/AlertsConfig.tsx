@@ -175,6 +175,11 @@ export default function AlertsConfig() {
     await loadAlerts();
   };
 
+  const openViewersModal = (alert: any) => {
+    setSelectedAlertForViewers(alert);
+    setViewersModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
