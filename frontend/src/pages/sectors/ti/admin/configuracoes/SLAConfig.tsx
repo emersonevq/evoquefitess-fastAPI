@@ -865,6 +865,139 @@ export function SLA() {
           </div>
         )}
       </div>
+
+      <div className="border-t pt-8 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-lg font-semibold">Feriados</h2>
+          <Dialog open={showHolidayDialog} onOpenChange={setShowHolidayDialog}>
+            <DialogTrigger asChild>
+              <Button onClick={handleAddHoliday} size="sm" className="gap-2 h-8">
+                <Plus className="w-4 h-4" />
+                Adicionar Feriado
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingHoliday
+                    ? "Editar Feriado"
+                    : "Adicionar Feriado"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Data</Label>
+                  <Input
+                    type="date"
+                    value={holidayData.data}
+                    onChange={(e) =>
+                      setHolidayData({
+                        ...holidayData,
+                        data: e.target.value,
+                      })
+                    }
+                    disabled={!!editingHoliday}
+                  />
+                </div>
+                <div>
+                  <Label>Nome</Label>
+                  <Input
+                    placeholder="Ex: Natal, Ano Novo"
+                    value={holidayData.nome}
+                    onChange={(e) =>
+                      setHolidayData({
+                        ...holidayData,
+                        nome: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Descrição</Label>
+                  <Input
+                    placeholder="Descrição do feriado (opcional)"
+                    value={holidayData.descricao}
+                    onChange={(e) =>
+                      setHolidayData({
+                        ...holidayData,
+                        descricao: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowHolidayDialog(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSaveHoliday}>
+                    {editingHoliday ? "Atualizar" : "Adicionar"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {holidaysLoading ? (
+          <div className="text-muted-foreground">Carregando...</div>
+        ) : holidays.length > 0 ? (
+          <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
+            <div className="divide-y divide-border/60">
+              {holidays
+                .sort((a: Holiday, b: Holiday) => a.data.localeCompare(b.data))
+                .map((holiday: Holiday) => (
+                  <div
+                    key={holiday.id}
+                    className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-sm">{holiday.nome}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(holiday.data + "T00:00:00").toLocaleDateString(
+                            "pt-BR"
+                          )}
+                        </span>
+                        {holiday.descricao && (
+                          <span className="text-xs text-muted-foreground">
+                            • {holiday.descricao}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditHoliday(holiday)}
+                        className="h-8 px-3"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() =>
+                          deleteHolidayMutation.mutate(holiday.id)
+                        }
+                        className="h-8 px-3"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum feriado configurado
+          </div>
+        )}
+      </div>
     </div>
   );
 }
