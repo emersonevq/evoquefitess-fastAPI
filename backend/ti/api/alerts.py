@@ -49,7 +49,8 @@ def list_alerts(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
                 "created_at": alert.created_at.isoformat() if alert.created_at else None,
                 "updated_at": alert.updated_at.isoformat() if alert.updated_at else None,
                 "imagem_mime_type": alert.imagem_mime_type,
-                "imagem_blob": None
+                "imagem_blob": None,
+                "pages": alert.pages
             }
             
             # Converter blob para base64 se existir
