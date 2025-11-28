@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 from io import BytesIO
 from datetime import datetime
 import base64
+import json
 from core.db import get_db, engine
 
 # Imports com tratamento de erro
