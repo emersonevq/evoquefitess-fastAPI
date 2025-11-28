@@ -183,10 +183,10 @@ export function SLA() {
     },
   });
 
-  const { data: holidays = [], isLoading: holidaysLoading } = useQuery({
-    queryKey: ["sla-holidays"],
+  const { data: feriados = [], isLoading: feriadosLoading } = useQuery({
+    queryKey: ["sla-feriados"],
     queryFn: async () => {
-      const response = await api.get("/sla/holidays");
+      const response = await api.get("/sla/feriados");
       return response.data;
     },
   });
