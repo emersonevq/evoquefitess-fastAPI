@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { AlertCircle, AlertTriangle, Info, Flame, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { shouldShowAlertOnPage } from "@/config/alert-pages";
+import { useAuthContext } from "@/lib/auth-context";
 
 const severityConfig = {
   low: {
@@ -37,6 +38,7 @@ const severityConfig = {
 
 export default function AlertDisplay() {
   const location = useLocation();
+  const { user } = useAuthContext();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,10 +70,24 @@ export default function AlertDisplay() {
     }
   };
 
+  const markAlertAsViewed = async (alertId: number) => {
+    try {
+      const usuarioId = user?.email || user?.name || "anonymous";
+      await apiFetch(`/alerts/${alertId}/visualizar`, {
+        method: "POST",
+        body: JSON.stringify({ usuario_id: usuarioId }),
+      });
+    } catch (error) {
+      console.error("Erro ao marcar alerta como visualizado:", error);
+    }
+  };
+
   const dismissAlert = (alertId: number) => {
     const newDismissed = [...dismissedAlerts, alertId];
     setDismissedAlerts(newDismissed);
     localStorage.setItem("dismissedAlerts", JSON.stringify(newDismissed));
+    // Marcar como visualizado ao dismissar
+    markAlertAsViewed(alertId);
   };
 
   // Filtrar alertas:
