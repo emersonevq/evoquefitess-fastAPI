@@ -535,47 +535,50 @@ export default function Overview() {
           <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative card-surface rounded-2xl p-6 border border-border/60">
             <h3 className="font-semibold text-lg mb-4">P90 Recomendado vs SLA Atual</h3>
-            <div className="space-y-4">
-              {!performanceData ? (
+            <div className="space-y-3">
+              {p90Loading ? (
                 <div className="text-muted-foreground text-center py-4">
-                  Carregando dados de desempenho...
+                  <Loader className="w-4 h-4 animate-spin mx-auto" />
+                </div>
+              ) : !p90AnalysisData?.prioridades || Object.keys(p90AnalysisData.prioridades).length === 0 ? (
+                <div className="text-muted-foreground text-center py-4 text-sm">
+                  Dados insuficientes para análise
                 </div>
               ) : (
-                [
-                  {
-                    label: "Tempo médio de resolução",
-                    value: performanceData.tempo_resolucao_medio,
-                    color: "orange",
-                  },
-                  {
-                    label: "Primeira resposta",
-                    value: performanceData.primeira_resposta_media,
-                    color: "blue",
-                  },
-                  {
-                    label: "Taxa de reaberturas",
-                    value: performanceData.taxa_reaberturas,
-                    color: "green",
-                  },
-                  {
-                    label: "Chamados em backlog",
-                    value: String(performanceData.chamados_backlog),
-                    color: "purple",
-                  },
-                ].map((item, i) => (
+                Object.entries(p90AnalysisData.prioridades).map(([prioridade, data]: [string, any]) => (
                   <div
-                    key={i}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                    key={prioridade}
+                    className="p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-1.5 h-8 rounded-full ${colorStyles[item.color as keyof typeof colorStyles]}`}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {item.label}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold">{prioridade}</span>
+                      <span
+                        className={`text-xs font-bold px-2 py-1 rounded-full ${
+                          data.melhoria > 0
+                            ? "bg-green-500/20 text-green-700 dark:text-green-400"
+                            : "bg-gray-500/20 text-gray-700 dark:text-gray-400"
+                        }`}
+                      >
+                        +{data.melhoria}%
                       </span>
                     </div>
-                    <span className="text-lg font-bold">{item.value}</span>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <div className="text-muted-foreground">SLA Atual</div>
+                        <div className="font-semibold">{data.sla_atual}h</div>
+                        <div className="text-xs text-muted-foreground">{data.conformidade_atual}% ok</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">P90</div>
+                        <div className="font-semibold">{data.p90.toFixed(1)}h</div>
+                        <div className="text-xs text-muted-foreground">-</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Recomendado</div>
+                        <div className="font-semibold">{data.p90_recomendado}h</div>
+                        <div className="text-xs text-muted-foreground">{data.conformidade_com_p90}% ok</div>
+                      </div>
+                    </div>
                   </div>
                 ))
               )}
