@@ -181,18 +181,24 @@ class ChamadosTodayCounter:
             )
 
             try:
-                from sqlalchemy import insert
-                stmt = insert(MetricsCacheDB).values(
-                    cache_key=cache_key,
-                    cache_value=json.dumps(count),
-                    calculated_at=agora,
-                    expires_at=proximo_dia,
-                ).on_duplicate_key_update(
-                    cache_value=json.dumps(count),
-                    calculated_at=agora,
-                    expires_at=proximo_dia,
-                )
-                db.execute(stmt)
+                existing = db.query(MetricsCacheDB).filter(
+                    MetricsCacheDB.cache_key == cache_key
+                ).first()
+
+                if existing:
+                    existing.cache_value = json.dumps(count)
+                    existing.calculated_at = agora
+                    existing.expires_at = proximo_dia
+                    db.add(existing)
+                else:
+                    new_cache = MetricsCacheDB(
+                        cache_key=cache_key,
+                        cache_value=json.dumps(count),
+                        calculated_at=agora,
+                        expires_at=proximo_dia,
+                    )
+                    db.add(new_cache)
+
                 db.commit()
             except Exception as commit_error:
                 db.rollback()
@@ -409,17 +415,24 @@ class IncrementalMetricsCache:
             cache_value = json.dumps(metricas)
 
             try:
-                stmt = insert(MetricsCacheDB).values(
-                    cache_key=cache_key,
-                    cache_value=cache_value,
-                    calculated_at=agora,
-                    expires_at=expire_time,
-                ).on_duplicate_key_update(
-                    cache_value=cache_value,
-                    calculated_at=agora,
-                    expires_at=expire_time,
-                )
-                db.execute(stmt)
+                existing = db.query(MetricsCacheDB).filter(
+                    MetricsCacheDB.cache_key == cache_key
+                ).first()
+
+                if existing:
+                    existing.cache_value = cache_value
+                    existing.calculated_at = agora
+                    existing.expires_at = expire_time
+                    db.add(existing)
+                else:
+                    new_cache = MetricsCacheDB(
+                        cache_key=cache_key,
+                        cache_value=cache_value,
+                        calculated_at=agora,
+                        expires_at=expire_time,
+                    )
+                    db.add(new_cache)
+
                 db.commit()
             except Exception as commit_error:
                 db.rollback()
@@ -449,17 +462,24 @@ class IncrementalMetricsCache:
             cache_value = json.dumps({"dentro_sla": dentro_sla})
 
             try:
-                stmt = insert(MetricsCacheDB).values(
-                    cache_key=cache_key,
-                    cache_value=cache_value,
-                    calculated_at=agora,
-                    expires_at=expire_time,
-                ).on_duplicate_key_update(
-                    cache_value=cache_value,
-                    calculated_at=agora,
-                    expires_at=expire_time,
-                )
-                db.execute(stmt)
+                existing = db.query(MetricsCacheDB).filter(
+                    MetricsCacheDB.cache_key == cache_key
+                ).first()
+
+                if existing:
+                    existing.cache_value = cache_value
+                    existing.calculated_at = agora
+                    existing.expires_at = expire_time
+                    db.add(existing)
+                else:
+                    new_cache = MetricsCacheDB(
+                        cache_key=cache_key,
+                        cache_value=cache_value,
+                        calculated_at=agora,
+                        expires_at=expire_time,
+                    )
+                    db.add(new_cache)
+
                 db.commit()
             except Exception as commit_error:
                 db.rollback()
