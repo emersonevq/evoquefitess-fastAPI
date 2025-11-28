@@ -50,6 +50,7 @@ def list_alerts(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
                 "show_on_home": alert.show_on_home,
                 "created_by": alert.created_by,
                 "ativo": alert.ativo,
+                "usuarios_visualizaram": alert.usuarios_visualizaram,
                 "created_at": alert.created_at.isoformat() if alert.created_at else None,
                 "updated_at": alert.updated_at.isoformat() if alert.updated_at else None,
                 "imagem_mime_type": alert.imagem_mime_type,
