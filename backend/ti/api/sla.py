@@ -629,7 +629,7 @@ def resetar_todo_cache(db: Session = Depends(get_db)):
 def resetar_sla_completo(db: Session = Depends(get_db)):
     """
     Reseta COMPLETAMENTE o SLA:
-    1. Limpa todo o cache de métricas
+    1. Limpa todo o cache de métricas (memória + banco)
     2. Registra a data de reset em cada configuração de SLA
     3. Remove dados de cache P90 incremental
     4. Próximos cálculos ignorarão dados anteriores ao reset
@@ -641,29 +641,43 @@ def resetar_sla_completo(db: Session = Depends(get_db)):
 
         agora = now_brazil_naive()
 
-        # 1. Registra o reset em todas as configurações de SLA
+        print(f"\n[SLA RESET] Iniciando reset completo do sistema SLA")
+
+        # 1. Invalida TUDO em memória primeiro
+        print(f"[SLA RESET] Invalidando cache em memória...")
+        SLACacheManager.invalidate_all_sla(db)
+
+        # 2. Limpa TUDO do banco de dados
+        print(f"[SLA RESET] Limpando banco de dados...")
+        db.query(MetricsCacheDB).delete()
+
+        # 3. Registra o reset em todas as configurações de SLA
+        print(f"[SLA RESET] Registrando data de reset nas configurações...")
         configs = db.query(SLAConfiguration).all()
         for config in configs:
             config.ultimo_reset_em = agora
             config.atualizado_em = agora
+            print(f"  - {config.prioridade}: reset em {agora.isoformat()}")
             db.add(config)
 
-        # 2. Limpa todo o cache de métricas
-        db.query(MetricsCacheDB).delete()
-
-        # 3. Invalida todos os caches em memória
-        SLACacheManager.invalidate_all_sla(db)
-
+        # 4. Commit de tudo atomicamente
         db.commit()
+
+        print(f"[SLA RESET] ✅ Reset concluído com sucesso!")
 
         return {
             "ok": True,
             "message": "Sistema de SLA foi completamente resetado",
             "reset_em": agora.isoformat(),
             "proximos_calculos": "Apenas chamados posteriores a este reset serão considerados",
-            "configuracoes_atualizadas": len(configs)
+            "configuracoes_atualizadas": len(configs),
+            "cache_limpo": True,
+            "memoria_limpa": True
         }
     except Exception as e:
+        print(f"[SLA RESET] ❌ Erro ao resetar SLA: {e}")
+        import traceback
+        traceback.print_exc()
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao resetar SLA: {e}")
 
