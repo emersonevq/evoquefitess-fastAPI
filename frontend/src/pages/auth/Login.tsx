@@ -108,7 +108,7 @@ export default function Login() {
 
             {/* Auth0 Microsoft Login Button */}
             <Button
-              onClick={handleAuth0Login}
+              onClick={handleMicrosoftLogin}
               disabled={isAuth0Loading}
               className="w-full h-11 rounded-md mb-6 bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 group"
             >
