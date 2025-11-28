@@ -54,12 +54,14 @@ export default function Login() {
     }
   };
 
-  const handleAuth0Login = async () => {
+  const handleMicrosoftLogin = async () => {
     setIsAuth0Loading(true);
     try {
-      await loginWithAuth0();
+      await loginWithMicrosoft();
+      const redirect = new URLSearchParams(window.location.search).get("redirect") || "/";
+      window.location.href = redirect;
     } catch (error) {
-      console.error("Erro ao fazer login com Auth0:", error);
+      console.error("Erro ao fazer login com Microsoft:", error);
       alert("Erro ao conectar com Microsoft. Tente novamente.");
       setIsAuth0Loading(false);
     }
