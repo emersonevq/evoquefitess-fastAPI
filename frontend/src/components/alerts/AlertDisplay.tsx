@@ -104,7 +104,8 @@ export default function AlertDisplay() {
         body: JSON.stringify({
           usuario_id: usuarioId,
           usuario_email: usuarioEmail,
-          usuario_nome: usuarioNome
+          usuario_nome: usuarioNome,
+          usuario_sobrenome: usuarioSobrenome
         }),
       });
       markedAsViewedRef.current.add(alertId);
