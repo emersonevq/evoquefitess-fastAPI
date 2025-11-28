@@ -9,13 +9,13 @@ from ti.schemas.sla import (
     SLAConfigurationOut,
     SLABusinessHoursCreate,
     SLABusinessHoursOut,
-    SLAHolidayCreate,
-    SLAHolidayUpdate,
-    SLAHolidayOut,
+    SLAFeriadoCreate,
+    SLAFeriadoUpdate,
+    SLAFeriadoOut,
     HistoricoSLAOut,
     SLAStatusResponse,
 )
-from ti.models.sla_config import SLAConfiguration, SLABusinessHours, SLAHoliday, HistoricoSLA
+from ti.models.sla_config import SLAConfiguration, SLABusinessHours, SLAFeriado, HistoricoSLA
 from ti.models.chamado import Chamado
 from ti.services.sla import SLACalculator
 from ti.services.sla_cache import SLACacheManager
