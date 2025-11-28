@@ -89,7 +89,7 @@ INSERT IGNORE INTO `sla_feriados` (
 -- 4. VERIFICAR DADOS INSERIDOS
 -- =====================================================================
 -- SELECT * FROM `sla_business_hours` ORDER BY `dia_semana` ASC;
--- SELECT COUNT(*) as total_feriados FROM `sla_holidays` WHERE `ativo` = TRUE AND `data` >= CURDATE();
+-- SELECT COUNT(*) as total_feriados FROM `sla_feriados` WHERE `ativo` = TRUE AND `data` >= CURDATE();
 
 -- =====================================================================
 -- FIM DO SCRIPT
