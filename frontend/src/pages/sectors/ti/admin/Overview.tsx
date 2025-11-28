@@ -234,11 +234,13 @@ export default function Overview() {
       queryClient.invalidateQueries({ queryKey: ["metrics-performance"] });
 
       const prioridades = Object.keys(data.prioridades || {});
-      toast.success(`Métricas atualizadas! ${prioridades.length} prioridades recalculadas.`);
+      toast.success(
+        `Métricas atualizadas! ${prioridades.length} prioridades recalculadas.`,
+      );
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.detail || "Erro ao atualizar métricas de SLA"
+        error.response?.data?.detail || "Erro ao atualizar métricas de SLA",
       );
     },
   });
@@ -283,8 +285,12 @@ export default function Overview() {
             size="sm"
             className="gap-2"
           >
-            <RefreshCw className={`w-4 h-4 ${atualizarMetricasMutation.isPending ? 'animate-spin' : ''}`} />
-            {atualizarMetricasMutation.isPending ? 'Atualizando...' : 'Atualizar Métricas'}
+            <RefreshCw
+              className={`w-4 h-4 ${atualizarMetricasMutation.isPending ? "animate-spin" : ""}`}
+            />
+            {atualizarMetricasMutation.isPending
+              ? "Atualizando..."
+              : "Atualizar Métricas"}
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -318,8 +324,12 @@ export default function Overview() {
           size="sm"
           className="gap-2"
         >
-          <RefreshCw className={`w-4 h-4 ${atualizarMetricasMutation.isPending ? 'animate-spin' : ''}`} />
-          {atualizarMetricasMutation.isPending ? 'Atualizando...' : 'Atualizar Métricas'}
+          <RefreshCw
+            className={`w-4 h-4 ${atualizarMetricasMutation.isPending ? "animate-spin" : ""}`}
+          />
+          {atualizarMetricasMutation.isPending
+            ? "Atualizando..."
+            : "Atualizar Métricas"}
         </Button>
       </div>
 

@@ -401,7 +401,9 @@ export function SLA() {
       queryClient.invalidateQueries({ queryKey: ["metrics-daily"] });
       queryClient.invalidateQueries({ queryKey: ["metrics-weekly"] });
       queryClient.invalidateQueries({ queryKey: ["metrics-performance"] });
-      toast.success("Cache de SLA resetado com sucesso! Contagem recomeçará do zero.");
+      toast.success(
+        "Cache de SLA resetado com sucesso! Contagem recomeçará do zero.",
+      );
     },
     onError: (error: any) => {
       toast.error(
