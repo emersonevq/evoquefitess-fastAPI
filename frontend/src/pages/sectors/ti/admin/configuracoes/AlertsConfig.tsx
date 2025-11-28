@@ -34,6 +34,26 @@ export default function AlertsConfig() {
     setAlerts(Array.isArray(data) ? data : []);
   };
 
+  const handleImagemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagemFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImagemPreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const limparImagem = () => {
+    setImagemFile(null);
+    setImagemPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   useEffect(() => {
     loadMedia();
     loadAlerts();
