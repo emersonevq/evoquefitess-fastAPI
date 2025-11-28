@@ -90,6 +90,24 @@ async def create_alert(
         print(f"[ALERTS] Traceback completo:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Erro ao criar alerta: {str(e)}")
 
+@router.get("/{alert_id}/imagem")
+def get_alert_image(alert_id: int, db: Session = Depends(get_db)):
+    try:
+        a = db.query(Alert).filter(Alert.id == int(alert_id)).first()
+        if not a or not a.imagem_blob:
+            raise HTTPException(status_code=404, detail="Imagem não encontrada")
+
+        mime_type = a.imagem_mime_type or "image/jpeg"
+        return StreamingResponse(
+            BytesIO(a.imagem_blob),
+            media_type=mime_type,
+            headers={"Content-Disposition": f"inline; filename=alerta_{alert_id}"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao baixar imagem: {e}")
+
 @router.delete("/{alert_id}")
 def delete_alert(alert_id: int, db: Session = Depends(get_db)):
     try:
