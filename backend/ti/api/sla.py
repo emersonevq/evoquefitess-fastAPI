@@ -21,6 +21,7 @@ from ti.services.sla import SLACalculator
 from ti.services.sla_cache import SLACacheManager
 from ti.services.sla_validator import SLAValidator
 from core.utils import now_brazil_naive
+from datetime import timedelta
 
 router = APIRouter(prefix="/sla", tags=["TI - SLA"])
 
@@ -768,3 +769,124 @@ def deletar_feriado(feriado_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao deletar feriado: {e}")
+
+
+@router.get("/metrics/tempo-medio-resposta")
+def obter_tempo_medio_resposta(db: Session = Depends(get_db)):
+    """
+    Retorna tempo médio de resposta (primeira resposta) para chamados fechados.
+    Calcula baseado em horas de negócio.
+    """
+    try:
+        from ti.services.metrics import MetricsCalculator
+
+        tempo_24h = MetricsCalculator.get_tempo_medio_resposta_24h(db)
+        tempo_mes = MetricsCalculator.get_tempo_medio_resposta_mes(db)
+
+        return {
+            "tempo_medio_resposta_24h": tempo_24h,
+            "tempo_medio_resposta_mes": tempo_mes,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao obter tempo médio de resposta: {e}")
+
+
+@router.get("/metrics/tempo-medio-resolucao")
+def obter_tempo_medio_resolucao(db: Session = Depends(get_db)):
+    """
+    Retorna tempo médio de resolução para chamados fechados.
+    Calcula baseado em horas de negócio, descontando períodos em 'Em análise'.
+    """
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import and_
+        from ti.models.chamado import Chamado
+        from ti.services.sla import SLACalculator
+
+        agora = now_brazil_naive()
+        ontem = agora - timedelta(hours=24)
+        mes_inicio = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Últimas 24h
+        chamados_24h = db.query(Chamado).filter(
+            and_(
+                Chamado.data_conclusao.isnot(None),
+                Chamado.data_conclusao >= ontem,
+                Chamado.data_abertura.isnot(None),
+            )
+        ).all()
+
+        tempos_24h = []
+        for chamado in chamados_24h:
+            try:
+                tempo = SLACalculator.calculate_business_hours_excluding_paused(
+                    chamado.id,
+                    chamado.data_abertura,
+                    chamado.data_conclusao,
+                    db
+                )
+                if 0 < tempo < 168:  # Sanidade: 0 a 7 dias
+                    tempos_24h.append(tempo)
+            except Exception:
+                pass
+
+        tempo_medio_24h = sum(tempos_24h) / len(tempos_24h) if tempos_24h else 0
+
+        # Mês atual
+        chamados_mes = db.query(Chamado).filter(
+            and_(
+                Chamado.data_conclusao.isnot(None),
+                Chamado.data_conclusao >= mes_inicio,
+                Chamado.data_abertura.isnot(None),
+            )
+        ).all()
+
+        tempos_mes = []
+        for chamado in chamados_mes:
+            try:
+                tempo = SLACalculator.calculate_business_hours_excluding_paused(
+                    chamado.id,
+                    chamado.data_abertura,
+                    chamado.data_conclusao,
+                    db
+                )
+                if 0 < tempo < 720:  # Sanidade: 0 a 30 dias
+                    tempos_mes.append(tempo)
+            except Exception:
+                pass
+
+        tempo_medio_mes = sum(tempos_mes) / len(tempos_mes) if tempos_mes else 0
+
+        return {
+            "tempo_medio_resolucao_24h": round(tempo_medio_24h, 2),
+            "tempo_medio_resolucao_mes": round(tempo_medio_mes, 2),
+            "chamados_24h": len(tempos_24h),
+            "chamados_mes": len(tempos_mes),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao obter tempo médio de resolução: {e}")
+
+
+@router.post("/scheduler/recalcular-agora")
+def recalcular_sla_agora(db: Session = Depends(get_db)):
+    """
+    Força a recalculação imediata de SLA de todos os chamados.
+    Útil para testes ou sincronização manual.
+    """
+    try:
+        from ti.scripts.recalculate_sla_complete import SLARecalculator
+
+        recalculator = SLARecalculator(db)
+        stats = recalculator.recalculate_all(verbose=False)
+        db.commit()
+
+        return {
+            "ok": True,
+            "recalculados": stats["recalculados"],
+            "com_erro": stats["com_erro"],
+            "tempo_medio_resposta_horas": round(stats["tempo_medio_resposta_horas"], 2),
+            "tempo_medio_resolucao_horas": round(stats["tempo_medio_resolucao_horas"], 2),
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao recalcular SLA: {e}")

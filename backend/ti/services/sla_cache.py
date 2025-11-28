@@ -50,14 +50,16 @@ class SLACacheManager:
     _lock = threading.Lock()
 
     # Configurações de TTL por tipo de métrica
+    # IMPORTANTE: TTL muito longo (24 horas) - cache persiste até mudança de status
+    # Cache é invalidado APENAS quando há mudança de chamados, não por tempo
     CACHE_TTL = {
-        "sla_compliance_24h": 30 * 60,  # 30 minutos (aumentado de 5)
-        "sla_compliance_mes": 60 * 60,  # 60 minutos (aumentado de 15)
-        "sla_distribution": 60 * 60,  # 60 minutos (aumentado de 15)
-        "tempo_resposta_24h": 30 * 60,  # 30 minutos (aumentado de 5)
-        "tempo_resposta_mes": 60 * 60,  # 60 minutos (aumentado de 15)
-        "chamado_sla_status": 5 * 60,  # 5 minutos (aumentado de 2, é menos sensível)
-        "metrics_basic": 5 * 60,  # 5 minutos (aumentado de 2)
+        "sla_compliance_24h": 24 * 60 * 60,  # 24 horas - persiste até mudança
+        "sla_compliance_mes": 24 * 60 * 60,  # 24 horas - persiste até mudança
+        "sla_distribution": 24 * 60 * 60,  # 24 horas - persiste até mudança
+        "tempo_resposta_24h": 24 * 60 * 60,  # 24 horas - persiste até mudança
+        "tempo_resposta_mes": 24 * 60 * 60,  # 24 horas - persiste até mudança
+        "chamado_sla_status": 24 * 60 * 60,  # 24 horas - persiste até mudança
+        "metrics_basic": 24 * 60 * 60,  # 24 horas - persiste até mudança
     }
 
     # Chaves de cache relacionadas para invalidação
@@ -305,3 +307,54 @@ class SLACacheManager:
             "database_entries": db_count,
             "expired_in_db": db_expired,
         }
+
+    @classmethod
+    def warmup_from_database(cls, db: Session) -> dict:
+        """
+        Carrega todo o cache do banco de dados em memória.
+        Útil para pré-aquecer após restart da aplicação.
+
+        Retorna: estatísticas de carregamento
+        """
+        stats = {
+            "carregados": 0,
+            "expirados": 0,
+            "erros": 0,
+        }
+
+        try:
+            from ti.models.metrics_cache import MetricsCacheDB
+
+            agora = now_brazil_naive()
+            cached_entries = db.query(MetricsCacheDB).all()
+
+            for cached in cached_entries:
+                try:
+                    if cached.expires_at and cached.expires_at > agora:
+                        # Cache ainda é válido, carrega em memória
+                        value = json.loads(cached.cache_value) if isinstance(cached.cache_value, str) else cached.cache_value
+                        ttl = cls._get_ttl_for_key(cached.cache_key)
+                        with cls._lock:
+                            cls._memory_cache[cached.cache_key] = SLACacheEntry(
+                                cached.cache_key, value, ttl
+                            )
+                        stats["carregados"] += 1
+                    else:
+                        # Cache expirou, marca para deleção
+                        stats["expirados"] += 1
+                        db.delete(cached)
+
+                except Exception as e:
+                    stats["erros"] += 1
+                    print(f"[CACHE] Erro ao carregar cache {cached.cache_key}: {e}")
+
+            db.commit()
+            return stats
+
+        except Exception as e:
+            print(f"[CACHE] Erro ao pré-aquecer cache: {e}")
+            try:
+                db.rollback()
+            except:
+                pass
+            return stats

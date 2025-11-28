@@ -433,8 +433,19 @@ export function SLA() {
 
   const handleAddHours = () => {
     setEditingHours(null);
+    // Encontra o primeiro dia sem horário configurado
+    let firstAvailableDay = 0;
+    for (let i = 0; i < DIAS_SEMANA.length; i++) {
+      const exists = businessHours.some(
+        (h: BusinessHours) => h.dia_semana === i,
+      );
+      if (!exists) {
+        firstAvailableDay = i;
+        break;
+      }
+    }
     setHoursData({
-      dia_semana: 0,
+      dia_semana: firstAvailableDay,
       hora_inicio: "08:00",
       hora_fim: "18:00",
     });
@@ -814,61 +825,105 @@ export function SLA() {
 
         {hoursLoading ? (
           <div className="text-muted-foreground">Carregando...</div>
-        ) : businessHours.length > 0 ? (
-          <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
-            <div className="divide-y divide-border/60">
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {DIAS_SEMANA.map((dia) => {
                 const horasDia = businessHours.find(
                   (h: BusinessHours) => h.dia_semana === dia.id,
                 );
                 return (
-                  <div
+                  <button
                     key={dia.id}
-                    className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between"
+                    onClick={() => {
+                      if (horasDia) {
+                        handleEditHours(horasDia);
+                      } else {
+                        setEditingHours(null);
+                        setHoursData({
+                          dia_semana: dia.id,
+                          hora_inicio: "08:00",
+                          hora_fim: "18:00",
+                        });
+                        setShowHoursDialog(true);
+                      }
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      horasDia
+                        ? "border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/10"
+                        : "border-border/40 bg-muted/30 hover:border-border/60 hover:bg-muted/50"
+                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-4 h-4 text-primary flex-shrink-0" />
-                      <h3 className="font-medium text-sm">{dia.label}</h3>
-                    </div>
-                    {horasDia ? (
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold text-sm text-primary">
-                          {horasDia.hora_inicio} - {horasDia.hora_fim}
-                        </span>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditHours(horasDia)}
-                            className="h-8 px-3"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() =>
-                              deleteHoursMutation.mutate(horasDia.id)
-                            }
-                            className="h-8 px-3"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
+                    <div className="text-left">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        {dia.label}
                       </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">
-                        Sem horário
-                      </span>
-                    )}
-                  </div>
+                      {horasDia ? (
+                        <div className="text-sm font-semibold text-primary">
+                          {horasDia.hora_inicio} - {horasDia.hora_fim}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground italic">
+                          Clique para adicionar
+                        </div>
+                      )}
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhum horário comercial configurado
+
+            <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
+              <div className="divide-y divide-border/60">
+                {DIAS_SEMANA.map((dia) => {
+                  const horasDia = businessHours.find(
+                    (h: BusinessHours) => h.dia_semana === dia.id,
+                  );
+                  return (
+                    <div
+                      key={dia.id}
+                      className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+                        <h3 className="font-medium text-sm">{dia.label}</h3>
+                      </div>
+                      {horasDia ? (
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold text-sm text-primary">
+                            {horasDia.hora_inicio} - {horasDia.hora_fim}
+                          </span>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditHours(horasDia)}
+                              className="h-8 px-3"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() =>
+                                deleteHoursMutation.mutate(horasDia.id)
+                              }
+                              className="h-8 px-3"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          Sem horário
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
