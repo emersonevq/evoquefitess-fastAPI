@@ -169,6 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data.id,
         email: data.email,
         name: `${data.nome} ${data.sobrenome}`,
+        firstName: data.nome,
+        lastName: data.sobrenome,
         nivel_acesso: data.nivel_acesso,
         setores: Array.isArray(data.setores) ? data.setores : [],
         bi_subcategories: Array.isArray(data.bi_subcategories)
