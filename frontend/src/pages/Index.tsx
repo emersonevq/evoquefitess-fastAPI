@@ -135,6 +135,7 @@ export default function Index() {
         alerts={alerts}
         onDismiss={dismiss}
         dismissed={dismissed}
+        userId={user?.id}
       />
 
       {/* Hero */}
