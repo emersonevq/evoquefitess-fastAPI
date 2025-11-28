@@ -320,8 +320,7 @@ export default function AlertsConfig() {
                 </div>
                 {imagemFile && (
                   <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-2 text-xs text-white">
-                    {imagemFile.name} •{" "}
-                    {(imagemFile.size / 1024).toFixed(0)} KB
+                    {imagemFile.name} • {(imagemFile.size / 1024).toFixed(0)} KB
                   </div>
                 )}
               </div>
@@ -375,9 +374,8 @@ export default function AlertsConfig() {
           <div className="grid gap-4">
             {alerts.map((alert) => {
               const config =
-                severityConfig[
-                  alert.severity as keyof typeof severityConfig
-                ] || severityConfig.low;
+                severityConfig[alert.severity as keyof typeof severityConfig] ||
+                severityConfig.low;
               const Icon = config.icon;
 
               return (
@@ -447,7 +445,7 @@ export default function AlertsConfig() {
                                   year: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
-                                }
+                                },
                               )}
                             </div>
                           )}
