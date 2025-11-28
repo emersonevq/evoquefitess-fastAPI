@@ -21,6 +21,7 @@ from ti.services.sla import SLACalculator
 from ti.services.sla_cache import SLACacheManager
 from ti.services.sla_validator import SLAValidator
 from core.utils import now_brazil_naive
+from datetime import timedelta
 
 router = APIRouter(prefix="/sla", tags=["TI - SLA"])
 
