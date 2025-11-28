@@ -531,10 +531,10 @@ export default function Overview() {
           </div>
         </div>
 
-        <div className="relative group">
+        <div className="relative group lg:col-span-2">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative card-surface rounded-2xl p-6 border border-border/60">
-            <h3 className="font-semibold text-lg mb-4">Desempenho do mês</h3>
+            <h3 className="font-semibold text-lg mb-4">P90 Recomendado vs SLA Atual</h3>
             <div className="space-y-4">
               {!performanceData ? (
                 <div className="text-muted-foreground text-center py-4">
