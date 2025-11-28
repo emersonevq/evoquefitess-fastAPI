@@ -564,6 +564,9 @@ export default function Overview() {
                         +{data.melhoria}%
                       </span>
                     </div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      {data.chamados_analisados} chamados • Min: {data.tempo_minimo}h • Médio: {data.tempo_medio}h • Máx: {data.tempo_maximo}h
+                    </div>
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <div>
                         <div className="text-muted-foreground">SLA Atual</div>
