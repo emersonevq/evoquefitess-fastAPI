@@ -4,7 +4,8 @@ from core.db import Base
 
 class Alert(Base):
     __tablename__ = "alert"
-
+    
+    # APENAS OS CAMPOS QUE EXISTEM NO BANCO!
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -14,4 +15,3 @@ class Alert(Base):
     imagem_blob = Column(LargeBinary, nullable=True)
     imagem_mime_type = Column(String(100), nullable=True)
     message = Column(Text, nullable=True)
-    pages = Column(Text, nullable=True)  # JSON array de page IDs
