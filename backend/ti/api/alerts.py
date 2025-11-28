@@ -265,6 +265,52 @@ def delete_alert(alert_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Erro ao remover alerta: {str(e)}")
 
 
+@router.post("/{alert_id}/visualizar")
+def mark_alert_viewed(alert_id: int, usuario_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    Marca um alerta como visualizado por um usuário
+    """
+    try:
+        alert = db.query(Alert).filter(Alert.id == alert_id).first()
+
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alerta não encontrado")
+
+        if not usuario_id:
+            usuario_id = "anonymous"
+
+        # Carregar array de usuários que visualizaram
+        usuarios_visualizaram = alert.usuarios_visualizaram
+        if not usuarios_visualizaram:
+            usuarios_visualizaram = []
+        else:
+            # Se for JSON, parsear
+            if isinstance(usuarios_visualizaram, str):
+                try:
+                    usuarios_visualizaram = json.loads(usuarios_visualizaram)
+                except:
+                    usuarios_visualizaram = []
+
+        # Adicionar usuario_id se não estiver na lista
+        if usuario_id not in usuarios_visualizaram:
+            usuarios_visualizaram.append(usuario_id)
+            alert.usuarios_visualizaram = usuarios_visualizaram
+            db.commit()
+            db.refresh(alert)
+            print(f"[ALERTS] Alerta {alert_id} marcado como visualizado por {usuario_id}")
+
+        return {"ok": True, "message": "Alerta marcado como visualizado"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"[ALERTS] Erro ao marcar alerta como visualizado: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro ao marcar alerta: {str(e)}")
+
+
 @router.get("/debug/test")
 def debug_test(db: Session = Depends(get_db)):
     """
