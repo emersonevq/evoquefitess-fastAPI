@@ -369,6 +369,7 @@ def get_alert_viewers(alert_id: int, db: Session = Depends(get_db)):
                     "id": user,
                     "email": user,
                     "nome": user,
+                    "sobrenome": "",
                     "visualizado_em": None
                 })
 
