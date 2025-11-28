@@ -18,7 +18,7 @@ Sistema de gestão interno da Evoque Fitness com frontend React e backend Expres
 │
 ├── backend/                 # API Express
 │   ├── src/
-│   │   ├── routes/         # Rotas da API
+│   │   ├── routes/         # Rotas da APIcc
 │   │   ├── middleware/     # Middlewares
 │   │   └── utils/          # Utilitários do backend
 │   ├── shared/             # Tipos compartilhados
