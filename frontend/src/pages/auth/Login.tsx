@@ -20,7 +20,7 @@ import {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginWithAuth0 } = useAuthContext();
+  const { login, loginWithMicrosoft } = useAuthContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
